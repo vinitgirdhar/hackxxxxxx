@@ -36,9 +36,13 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   font-family: 'Outfit', 'Inter', sans-serif;
-  /* Premium framing bars on left and right */
-  border-left: 6px solid var(--deep-moss);
-  border-right: 6px solid var(--gold);
+  /* Hide main window scrollbar (landing page) */
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;
 }
 
 #root {

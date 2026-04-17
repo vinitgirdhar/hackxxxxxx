@@ -277,12 +277,12 @@ export default function LandingPage() {
       </div>
 
       {/* Nav */}
-      <nav className="fixed top-6 left-0 right-0 z-50 flex justify-center px-6 pointer-events-none">
+      <nav className="fixed top-6 left-0 right-0 z-50 flex px-6 pointer-events-none">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] as const }}
-          className="glass-header machined-panel px-6 py-3 flex items-center justify-between w-full max-w-6xl pointer-events-auto shadow-2xl"
+          className="glass-header machined-panel px-12 py-3 flex items-center justify-between w-full pointer-events-auto shadow-2xl"
         >
           <div className="text-xl font-black text-zinc-950 tracking-tighter flex items-center gap-2 uppercase">
             <span className="text-amber-400 text-2xl">◎</span>
@@ -306,7 +306,7 @@ export default function LandingPage() {
 
       <main className="relative w-full overflow-x-hidden">
         {/* Hero */}
-        <section className="relative min-h-screen flex items-center pt-32 pb-20 px-6 max-w-7xl mx-auto overflow-hidden z-10 perspective-container">
+        <section className="relative min-h-screen flex items-center pt-32 pb-20 px-12 w-full overflow-hidden z-10 perspective-container">
           {/* Decorative blobs */}
           <div className="blob blob--gold absolute -top-20 -left-32 w-96 h-96 opacity-30 z-0" />
           <div className="blob blob--emerald absolute -bottom-20 -right-32 w-80 h-80 opacity-20 z-0" style={{ animationDelay: '5s' }} />
@@ -430,7 +430,7 @@ export default function LandingPage() {
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
-            className="max-w-7xl mx-auto px-6 mb-8 text-center"
+            className="w-full px-12 mb-8 text-center"
           >
             <div className="text-base font-black tracking-widest uppercase text-zinc-900">Trusted by sales teams worldwide</div>
             <div className="text-xs font-bold tracking-widest text-emerald-600 uppercase mt-2">Over 2,000,000 leads qualified</div>
@@ -446,7 +446,7 @@ export default function LandingPage() {
         </section>
 
         {/* Stats */}
-        <section className="max-w-7xl mx-auto px-6 py-24 relative z-10">
+        <section className="w-full px-12 py-24 relative z-10">
           {/* Decorative rotating ring */}
           <div className="absolute top-10 right-10 w-32 h-32 rotating-ring opacity-30 pointer-events-none" />
           <div className="absolute bottom-10 left-10 w-24 h-24 rotating-ring-reverse opacity-20 pointer-events-none" />
@@ -488,7 +488,7 @@ export default function LandingPage() {
         </section>
 
         {/* Feature Cards */}
-        <section className="py-32 px-6 max-w-7xl mx-auto text-center relative z-10" id="features-section">
+        <section className="py-32 px-12 w-full text-center relative z-10" id="features-section">
           {/* Ambient blob */}
           <div className="blob blob--emerald absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] opacity-10 z-0" />
 
@@ -652,7 +652,7 @@ export default function LandingPage() {
         </section>
 
         {/* Feature Spotlight (UI Mockup) */}
-        <section className="py-24 px-6 max-w-7xl mx-auto relative z-10 perspective-container">
+        <section className="py-24 px-12 w-full relative z-10 perspective-container">
           <div className="grid lg:grid-cols-2 gap-16 items-start">
             {/* Left Text Content */}
             <motion.div
@@ -795,7 +795,7 @@ export default function LandingPage() {
         </section>
 
         {/* Before/After */}
-        <section className="py-20 px-6 max-w-7xl mx-auto relative z-10">
+        <section className="py-20 px-12 w-full relative z-10">
           <motion.div
             initial="hidden"
             whileInView="visible"
@@ -831,7 +831,7 @@ export default function LandingPage() {
         </section>
 
         {/* Capabilities (Bento 2) */}
-        <section className="py-32 px-6 max-w-7xl mx-auto relative z-10" id="stack-section">
+        <section className="py-32 px-12 w-full relative z-10" id="stack-section">
           <div className="absolute top-20 right-0 w-40 h-40 rotating-ring opacity-20 pointer-events-none" />
           <div className="blob blob--gold absolute -top-20 right-0 w-64 h-64 opacity-15 z-0" style={{ animationDelay: '3s' }} />
 
@@ -873,7 +873,7 @@ export default function LandingPage() {
         </section>
 
         {/* Pricing */}
-        <section className="py-32 px-6 max-w-7xl mx-auto relative z-10" id="pricing-section">
+        <section className="py-32 px-12 w-full relative z-10" id="pricing-section">
           {/* Decorative */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-48 rotating-ring-reverse opacity-15 pointer-events-none" />
 
@@ -996,7 +996,7 @@ export default function LandingPage() {
 
         {/* Footer */}
         <footer className="pt-20 pb-10 border-t border-zinc-300/50 relative z-10 bg-white/50 backdrop-blur-md">
-          <div className="max-w-7xl mx-auto px-6">
+          <div className="w-full px-12">
             <div className="grid grid-cols-2 md:grid-cols-5 gap-10 mb-16">
               <div className="col-span-2">
                 <div className="text-xl font-black text-zinc-950 tracking-tighter uppercase flex items-center gap-2 mb-4">
