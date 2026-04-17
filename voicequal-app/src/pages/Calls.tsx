@@ -58,9 +58,14 @@ function MiniWave({ color }: { color: string }) {
 function TranscriptRow({ callId }: { callId: string }) {
   const [loading, setLoading] = useState(true);
   const [transcript, setTranscript] = useState<any[]>([]);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [audioLoading, setAudioLoading] = useState(true);
+  const [audioError, setAudioError] = useState(false);
 
   useEffect(() => {
     let active = true;
+
+    // Fetch transcript
     const fetchTranscript = async () => {
       try {
         const res = await fetch(`https://api.elevenlabs.io/v1/convai/conversations/${callId}`, {
@@ -76,8 +81,35 @@ function TranscriptRow({ callId }: { callId: string }) {
         if (active) setLoading(false);
       }
     };
+
+    // Fetch audio blob with auth header (native <audio> can't send custom headers)
+    const fetchAudio = async () => {
+      try {
+        const res = await fetch(
+          `https://api.elevenlabs.io/v1/convai/conversations/${callId}/audio`,
+          { headers: { "xi-api-key": ELEVENLABS_API_KEY } }
+        );
+        if (!res.ok) throw new Error(`Audio fetch failed: ${res.status}`);
+        const blob = await res.blob();
+        if (active) {
+          setAudioUrl(URL.createObjectURL(blob));
+        }
+      } catch (err) {
+        console.error("Failed to load audio", err);
+        if (active) setAudioError(true);
+      } finally {
+        if (active) setAudioLoading(false);
+      }
+    };
+
     fetchTranscript();
-    return () => { active = false; };
+    fetchAudio();
+
+    return () => {
+      active = false;
+      // Revoke object URL to avoid memory leaks
+      if (audioUrl) URL.revokeObjectURL(audioUrl);
+    };
   }, [callId]);
 
   return (
@@ -123,12 +155,20 @@ function TranscriptRow({ callId }: { callId: string }) {
             <PlayCircle className="w-4 h-4" /> Recording
           </h3>
           <div className="w-full">
-            <audio 
-              controls 
-              className="w-full h-10"
-              src={`https://api.elevenlabs.io/v1/convai/conversations/${callId}/audio`}
-              controlsList="nodownload" 
-            />
+            {audioLoading ? (
+              <div className="flex items-center gap-2 text-sm text-zinc-400">
+                <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                Loading recording…
+              </div>
+            ) : audioError || !audioUrl ? (
+              <div className="text-sm text-zinc-400 italic">Recording unavailable for this call.</div>
+            ) : (
+              <audio
+                controls
+                className="w-full"
+                src={audioUrl}
+              />
+            )}
           </div>
         </div>
 
