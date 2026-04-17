@@ -36,6 +36,9 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   font-family: 'Outfit', 'Inter', sans-serif;
+  /* Premium framing bars on left and right */
+  border-left: 6px solid var(--deep-moss);
+  border-right: 6px solid var(--gold);
 }
 
 #root {

@@ -295,7 +295,6 @@ export default function LandingPage() {
             <a href="#cta-section" className="hover-underline hover:text-zinc-950 transition-colors">Get Started</a>
           </div>
           <div className="flex items-center gap-4">
-            <a href="#" className="hidden md:block text-xs font-bold uppercase tracking-widest text-zinc-600 hover:text-zinc-950 transition-colors hover-underline">Sign In</a>
             <button
               onClick={() => navigate('/dashboard')}
               className="magnetic-btn press-effect bg-zinc-950 text-white px-6 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-amber-400 transition-colors shadow-md">
