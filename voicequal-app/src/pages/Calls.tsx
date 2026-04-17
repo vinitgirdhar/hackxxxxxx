@@ -1,9 +1,7 @@
-import { motion } from "framer-motion";
-import { PhoneCall, PhoneOff, Clock, Mic, PhoneMissed, RefreshCw } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { PhoneCall, PhoneOff, Clock, Mic, PhoneMissed, RefreshCw, MessageSquare, PlayCircle, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
 import DashboardLayout from "../components/DashboardLayout";
-import { supabase, type CallResult } from "../lib/supabase";
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 24 },
@@ -11,16 +9,7 @@ const fadeUp = (delay = 0) => ({
   transition: { duration: 0.55, delay, ease: [0.16, 1, 0.3, 1] as const },
 });
 
-const MOCK_CALLS = [
-  { id: '1', lead: 'Priya Menon',  company: 'Infosys',       duration: '4:32', time: '10:12 AM', status: 'COMPLETED', score: 9.1, outcome: 'HOT'  },
-  { id: '2', lead: 'Arjun Sharma', company: 'Wipro',         duration: '3:47', time: '10:45 AM', status: 'COMPLETED', score: 8.5, outcome: 'HOT'  },
-  { id: '3', lead: 'Neha Kapoor',  company: 'TCS',           duration: '5:10', time: '11:20 AM', status: 'COMPLETED', score: 6.2, outcome: 'WARM' },
-  { id: '4', lead: 'Rohit Verma',  company: 'HCL Tech',      duration: '—',    time: '11:55 AM', status: 'CALLING',   score: null, outcome: null  },
-  { id: '5', lead: 'Anjali Singh', company: 'Cognizant',     duration: '2:05', time: '12:30 PM', status: 'COMPLETED', score: 2.1, outcome: 'COLD' },
-  { id: '6', lead: 'Vikram Nair',  company: 'Tech Mahindra', duration: '—',    time: '1:15 PM',  status: 'FAILED',    score: null, outcome: null  },
-  { id: '7', lead: 'Kavya Reddy',  company: 'Mphasis',       duration: '6:22', time: '2:00 PM',  status: 'COMPLETED', score: 7.3, outcome: 'HOT'  },
-  { id: '8', lead: 'Meera Iyer',   company: 'L&T Infotech',  duration: '4:58', time: '2:45 PM',  status: 'COMPLETED', score: 8.9, outcome: 'HOT'  },
-];
+const ELEVENLABS_API_KEY = "f86cd3c5c5c32a9b951409b35041b6bb83e73a5b7e711db8f783babbeb94f103";
 
 function formatDuration(seconds?: number): string {
   if (!seconds) return '—';
@@ -29,48 +18,28 @@ function formatDuration(seconds?: number): string {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
-function formatTime(iso?: string): string {
-  if (!iso) return '—';
-  return new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+function formatTime(unix_secs?: number): string {
+  if (!unix_secs) return '—';
+  return new Date(unix_secs * 1000).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
 }
 
 function mapStatus(s: string): string {
   if (s === 'done') return 'COMPLETED';
+  if (s === 'processing') return 'PROCESSING';
   if (s === 'in_progress' || s === 'calling') return 'CALLING';
   if (s === 'failed' || s === 'error') return 'FAILED';
   return s.toUpperCase();
 }
 
-function mapOutcome(score?: number): string | null {
-  if (score == null) return null;
-  if (score >= 7) return 'HOT';
-  if (score >= 4) return 'WARM';
-  return 'COLD';
-}
-
-function mapDbToCall(r: CallResult) {
-  const outcome = r.outcome ?? mapOutcome(r.score);
-  return {
-    id: r.call_id,
-    lead: r.lead_name ?? r.call_id.slice(0, 16),
-    company: r.company ?? '—',
-    duration: '—',
-    time: formatTime(r.called_at),
-    status: mapStatus(r.status),
-    score: r.score ?? null,
-    outcome,
-  };
-}
-
 const statusMap: Record<string, { icon: typeof PhoneCall; color: string; bg: string; label: string }> = {
-  COMPLETED: { icon: PhoneCall,   color: "#1F8A70", bg: "rgba(31,138,112,0.08)",  label: "Completed" },
-  CALLING:   { icon: Mic,         color: "#D4AF37", bg: "rgba(212,175,55,0.08)",  label: "Live"      },
-  FAILED:    { icon: PhoneMissed, color: "#DC2626", bg: "rgba(239,68,68,0.08)",   label: "Failed"    },
+  COMPLETED:  { icon: PhoneCall,   color: "#1F8A70", bg: "rgba(31,138,112,0.08)",  label: "Completed" },
+  CALLING:    { icon: Mic,         color: "#D4AF37", bg: "rgba(212,175,55,0.08)",  label: "Live"      },
+  PROCESSING: { icon: RefreshCw,   color: "#3B82F6", bg: "rgba(59,130,246,0.08)",  label: "Processing" },
+  FAILED:     { icon: PhoneMissed, color: "#DC2626", bg: "rgba(239,68,68,0.08)",   label: "Failed"    },
 };
 
 const outcomeColors: Record<string, string> = { HOT: "#1F8A70", WARM: "#D4AF37", COLD: "#94A3B8" };
 
-// Mini waveform for CALLING status
 function MiniWave({ color }: { color: string }) {
   return (
     <div className="flex items-end gap-[2px] h-4">
@@ -86,27 +55,115 @@ function MiniWave({ color }: { color: string }) {
   );
 }
 
-export default function Calls() {
-  const [, navigate] = useLocation();
-  const [calls, setCalls] = useState(MOCK_CALLS);
+function TranscriptRow({ callId }: { callId: string }) {
   const [loading, setLoading] = useState(true);
-  const [usingLive, setUsingLive] = useState(false);
+  const [transcript, setTranscript] = useState<any[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    const fetchTranscript = async () => {
+      try {
+        const res = await fetch(`https://api.elevenlabs.io/v1/convai/conversations/${callId}`, {
+          headers: { "xi-api-key": ELEVENLABS_API_KEY }
+        });
+        const data = await res.json();
+        if (active && data.transcript) {
+          setTranscript(data.transcript);
+        }
+      } catch (err) {
+        console.error("Failed to load transcript", err);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+    fetchTranscript();
+    return () => { active = false; };
+  }, [callId]);
+
+  return (
+    <div className="bg-zinc-50 border-b border-zinc-200 px-6 py-5">
+      <div className="flex flex-col lg:flex-row gap-6">
+        
+        {/* Transcript Section */}
+        <div className="flex-1 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar bg-white rounded-xl border border-zinc-200 p-4 shadow-sm">
+          <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-4 flex items-center gap-2">
+            <MessageSquare className="w-4 h-4" /> Transcript
+          </h3>
+          {loading ? (
+            <div className="flex items-center justify-center h-20 text-zinc-400">
+              <Loader2 className="w-5 h-5 animate-spin" />
+            </div>
+          ) : transcript.length === 0 ? (
+            <p className="text-sm text-zinc-400">No transcript available.</p>
+          ) : (
+            <div className="space-y-4">
+              {transcript.map((msg, i) => (
+                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm ${
+                    msg.role === 'user' 
+                      ? 'bg-emerald-600 text-white rounded-tr-sm' 
+                      : 'bg-zinc-100 text-zinc-800 rounded-tl-sm'
+                  }`}>
+                    <div className={`text-[10px] font-black uppercase tracking-wider mb-1 ${
+                      msg.role === 'user' ? 'text-emerald-200' : 'text-zinc-500'
+                    }`}>
+                      {msg.role}
+                    </div>
+                    {msg.message}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Audio Recording Section */}
+        <div className="w-full lg:w-72 shrink-0 bg-white rounded-xl border border-zinc-200 p-4 shadow-sm flex flex-col justify-center gap-4">
+          <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+            <PlayCircle className="w-4 h-4" /> Recording
+          </h3>
+          <div className="w-full">
+            <audio 
+              controls 
+              className="w-full h-10"
+              src={`https://api.elevenlabs.io/v1/convai/conversations/${callId}/audio`}
+              controlsList="nodownload" 
+            />
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+export default function Calls() {
+  const [calls, setCalls] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState<string | null>(null);
 
   const fetchCalls = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('call_results')
-        .select('*')
-        .order('called_at', { ascending: false })
-        .limit(50);
-
-      if (!error && data && data.length > 0) {
-        setCalls(data.map(mapDbToCall));
-        setUsingLive(true);
+      const res = await fetch("https://api.elevenlabs.io/v1/convai/conversations?limit=25", {
+        headers: { "xi-api-key": ELEVENLABS_API_KEY }
+      });
+      const data = await res.json();
+      if (data.conversations) {
+        const mapped = data.conversations.map((c: any) => ({
+          id: c.conversation_id,
+          lead: c.call_summary_title || "Unknown Call",
+          company: "ElevenLabs AI",
+          duration: formatDuration(c.call_duration_secs),
+          time: formatTime(c.start_time_unix_secs),
+          status: mapStatus(c.status),
+          score: null, 
+          outcome: c.call_successful === 'success' ? 'HOT' : (c.call_successful === 'failure' ? 'COLD' : 'WARM')
+        }));
+        setCalls(mapped);
       }
-    } catch {
-      // fallback to mock data silently
+    } catch (err) {
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -116,17 +173,10 @@ export default function Calls() {
 
   const completed = calls.filter(c => c.status === 'COMPLETED').length;
   const failed = calls.filter(c => c.status === 'FAILED').length;
-  const totalSecs = calls.filter(c => c.status === 'COMPLETED' && c.duration !== '—')
-    .reduce((acc, c) => {
-      const [m, s] = c.duration.split(':').map(Number);
-      return acc + (m * 60 + (s || 0));
-    }, 0);
-  const avgDur = completed > 0 ? `${Math.floor(totalSecs / completed / 60)}m ${String(Math.round((totalSecs / completed) % 60)).padStart(2,'0')}s` : '—';
-
+  
   const stats = [
     { label: "Total Calls",     value: String(calls.length), color: "#0F3D3E", icon: PhoneCall },
     { label: "Connected",       value: String(completed),    color: "#1F8A70", icon: PhoneCall },
-    { label: "Avg Duration",    value: avgDur,               color: "#D4AF37", icon: Clock     },
     { label: "Failed / No-ans", value: String(failed),       color: "#DC2626", icon: PhoneOff  },
   ];
 
@@ -138,23 +188,18 @@ export default function Calls() {
         <motion.div {...fadeUp(0)} className="flex items-start justify-between">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <div className="crown-badge">Call Intelligence</div>
-              {usingLive && (
-                <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full"
-                  style={{ background: "rgba(31,138,112,0.08)", color: "#1F8A70", border: "1px solid rgba(31,138,112,0.18)" }}>
-                  Live Data
-                </span>
-              )}
+              <div className="crown-badge">ElevenLabs Integration</div>
+              <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full"
+                style={{ background: "rgba(31,138,112,0.08)", color: "#1F8A70", border: "1px solid rgba(31,138,112,0.18)" }}>
+                Live Data
+              </span>
             </div>
-            <h1 className="text-3xl font-black text-zinc-950 tracking-tight uppercase" style={{ fontFamily: "'Outfit', sans-serif" }}>Calls</h1>
+            <h1 className="text-3xl font-black text-zinc-950 tracking-tight uppercase" style={{ fontFamily: "'Outfit', sans-serif" }}>Conversations</h1>
             <p className="text-sm mt-1.5 font-medium" style={{ color: "#71717a" }}>
-              All outbound AI calls and their outcomes —{" "}
-              <span style={{ color: "#D4AF37", fontWeight: 700 }}>
-                {calls.filter(c => c.status === 'CALLING').length} live call{calls.filter(c => c.status === 'CALLING').length !== 1 ? 's' : ''}
-              </span>{" "}in progress.
+              All outbound AI calls and their outcomes pulled directly from ElevenLabs.
             </p>
           </div>
-          <motion.button onClick={fetchCalls} disabled={loading}
+          <motion.button onClick={() => { setExpanded(null); fetchCalls(); }} disabled={loading}
             whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-wider border transition-all"
             style={{ borderColor: "rgba(212,175,55,0.2)", color: "#94a3b8", backgroundColor: "rgba(212,175,55,0.04)" }}>
@@ -186,7 +231,7 @@ export default function Calls() {
           {/* Table header */}
           <div className="px-6 py-3 flex items-center gap-3 text-[10px] font-black uppercase tracking-widest"
             style={{ borderBottom: "1px solid rgba(212,175,55,0.08)", color: "#94a3b8", background: "rgba(212,175,55,0.02)" }}>
-            <div className="flex-1">Lead</div>
+            <div className="flex-1">Summary / Lead</div>
             <div className="w-28 hidden md:block">Time</div>
             <div className="w-20 hidden lg:block">Duration</div>
             <div className="w-24">Status</div>
@@ -197,59 +242,75 @@ export default function Calls() {
             const sm = statusMap[call.status] ?? statusMap.COMPLETED;
             const StatusIcon = sm.icon;
             const isLive = call.status === 'CALLING';
+            const isExpanded = expanded === call.id;
+
             return (
-              <motion.div key={call.id}
-                initial={{ opacity: 0, x: -14 }} animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.05, ease: [0.16, 1, 0.3, 1] }}
-                onClick={() => navigate(`/leads/${call.id}`)}
-                className="flex items-center gap-3 px-6 py-4 cursor-pointer transition-all activity-row group hover:bg-emerald-50/30"
-                style={{ borderBottom: "1px solid rgba(0,0,0,0.04)" }}
-              >
-                {/* Lead icon + info */}
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 ${isLive ? 'animate-pulse' : ''}`}
-                    style={{ backgroundColor: sm.bg, border: `1px solid ${sm.color}25` }}>
-                    {isLive ? <MiniWave color={sm.color} /> : <StatusIcon className="w-4 h-4" style={{ color: sm.color }} />}
+              <div key={call.id} className="flex flex-col">
+                <motion.div
+                  initial={{ opacity: 0, x: -14 }} animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.05, ease: [0.16, 1, 0.3, 1] }}
+                  onClick={() => setExpanded(isExpanded ? null : call.id)}
+                  className={`flex items-center gap-3 px-6 py-4 cursor-pointer transition-all activity-row group ${isExpanded ? 'bg-emerald-50/40' : 'hover:bg-emerald-50/20'}`}
+                  style={{ borderBottom: "1px solid rgba(0,0,0,0.04)" }}
+                >
+                  {/* Lead icon + info */}
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 ${isLive ? 'animate-pulse' : ''}`}
+                      style={{ backgroundColor: sm.bg, border: `1px solid ${sm.color}25` }}>
+                      {isLive ? <MiniWave color={sm.color} /> : <StatusIcon className="w-4 h-4" style={{ color: sm.color }} />}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-bold text-sm truncate" style={{ color: "#09090b", fontFamily: "'Outfit', sans-serif" }}>{call.lead}</div>
+                      <div className="text-[11px] truncate font-medium" style={{ color: "#94a3b8" }}>{call.id.slice(0, 16)}...</div>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <div className="font-bold text-sm truncate" style={{ color: "#09090b", fontFamily: "'Outfit', sans-serif" }}>{call.lead}</div>
-                    <div className="text-[11px] truncate font-medium" style={{ color: "#94a3b8" }}>{call.company}</div>
+
+                  <div className="w-28 text-sm hidden md:flex items-center gap-1.5 font-medium" style={{ color: "#71717a" }}>
+                    <Clock className="w-3 h-3 shrink-0" /> {call.time}
                   </div>
-                </div>
 
-                <div className="w-28 text-sm hidden md:flex items-center gap-1.5 font-medium" style={{ color: "#71717a" }}>
-                  <Clock className="w-3 h-3 shrink-0" /> {call.time}
-                </div>
+                  <div className="w-20 text-sm font-mono font-bold hidden lg:block" style={{ color: "#09090b" }}>
+                    {call.duration}
+                  </div>
 
-                <div className="w-20 text-sm font-mono font-bold hidden lg:block" style={{ color: "#09090b" }}>
-                  {call.duration}
-                </div>
-
-                <div className="w-24">
-                  <span className="text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider"
-                    style={{ backgroundColor: sm.bg, color: sm.color }}>
-                    {isLive ? (
-                      <span className="flex items-center gap-1">
-                        <span className="w-1 h-1 rounded-full bg-current animate-pulse" />
-                        {sm.label}
-                      </span>
-                    ) : sm.label}
-                  </span>
-                </div>
-
-                <div className="w-20">
-                  {call.outcome ? (
-                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full"
-                      style={{ backgroundColor: `${outcomeColors[call.outcome]}12`, color: outcomeColors[call.outcome], border: `1px solid ${outcomeColors[call.outcome]}25` }}>
-                      {call.outcome}
+                  <div className="w-24">
+                    <span className="text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider"
+                      style={{ backgroundColor: sm.bg, color: sm.color }}>
+                      {isLive ? (
+                        <span className="flex items-center gap-1">
+                          <span className="w-1 h-1 rounded-full bg-current animate-pulse" />
+                          {sm.label}
+                        </span>
+                      ) : sm.label}
                     </span>
-                  ) : call.score != null ? (
-                    <span className="text-sm font-black" style={{ color: "#94a3b8" }}>—</span>
-                  ) : (
-                    <span style={{ color: "#cbd5e1" }}>—</span>
+                  </div>
+
+                  <div className="w-20">
+                    {call.outcome ? (
+                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full"
+                        style={{ backgroundColor: `${outcomeColors[call.outcome]}12`, color: outcomeColors[call.outcome], border: `1px solid ${outcomeColors[call.outcome]}25` }}>
+                        {call.outcome}
+                      </span>
+                    ) : (
+                      <span style={{ color: "#cbd5e1" }}>—</span>
+                    )}
+                  </div>
+                </motion.div>
+
+                <AnimatePresence>
+                  {isExpanded && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: 'easeInOut' }}
+                      className="overflow-hidden bg-zinc-50"
+                    >
+                      <TranscriptRow callId={call.id} />
+                    </motion.div>
                   )}
-                </div>
-              </motion.div>
+                </AnimatePresence>
+              </div>
             );
           })}
         </motion.div>

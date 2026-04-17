@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ArrowRight, Zap, TrendingUp } from "lucide-react";
+import { ArrowRight, Zap } from "lucide-react";
 import DashboardLayout from "../components/DashboardLayout";
 
 const fadeUp = (delay = 0) => ({

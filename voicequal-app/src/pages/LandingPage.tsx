@@ -1,14 +1,14 @@
 import { useEffect, useRef } from "react";
 import { useLocation } from "wouter";
-import { motion, useInView, useSpring, useMotionValue, useTransform, useScroll } from "framer-motion";
+import { motion, useInView, useSpring, useTransform, useScroll } from "framer-motion";
 import { PhoneCall, Zap, Target, Users, Lightbulb, Check } from "lucide-react";
 
 // ── Framer Motion Variants ──
-const fadeUp = { hidden: { opacity: 0, y: 60 }, visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] } } };
-const fadeScale = { hidden: { opacity: 0, scale: 0.9 }, visible: { opacity: 1, scale: 1, transition: { duration: 0.7, ease: [0.34, 1.56, 0.64, 1] } } };
+const fadeUp = { hidden: { opacity: 0, y: 60 }, visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] as const } } };
+const fadeScale = { hidden: { opacity: 0, scale: 0.9 }, visible: { opacity: 1, scale: 1, transition: { duration: 0.7, ease: [0.34, 1.56, 0.64, 1] as const } } };
 const stagger = { hidden: { opacity: 1 }, visible: { opacity: 1, transition: { staggerChildren: 0.12 } } };
-const slideLeft = { hidden: { opacity: 0, x: -60 }, visible: { opacity: 1, x: 0, transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] } } };
-const slideRight = { hidden: { opacity: 0, x: 60 }, visible: { opacity: 1, x: 0, transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] } } };
+const slideLeft = { hidden: { opacity: 0, x: -60 }, visible: { opacity: 1, x: 0, transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] as const } } };
+const slideRight = { hidden: { opacity: 0, x: 60 }, visible: { opacity: 1, x: 0, transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] as const } } };
 
 // ── Scroll Progress Bar ──
 function ScrollProgressBar() {
@@ -36,7 +36,7 @@ function ScrollReveal3D({ children, delay = 0 }: { children: React.ReactNode; de
       ref={ref}
       initial={{ opacity: 0, y: 60, rotateX: 15, scale: 0.95 }}
       animate={isInView ? { opacity: 1, y: 0, rotateX: 0, scale: 1 } : {}}
-      transition={{ duration: 0.8, delay, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: 0.8, delay, ease: [0.16, 1, 0.3, 1] as const }}
       style={{ transformPerspective: 1000 }}
     >
       {children}
@@ -140,9 +140,8 @@ export default function LandingPage() {
   const heroY = useTransform(scrollY, [0, 600], [0, -120]);
   const heroOpacity = useTransform(scrollY, [0, 400], [1, 0]);
   const heroScale = useTransform(scrollY, [0, 500], [1, 0.92]);
-  const heroRingRotate = useTransform(scrollY, [0, 800], [0, 45]);
-  const statsY = useTransform(scrollY, [200, 700], [40, 0]);
-  const statsOpacity = useTransform(scrollY, [200, 500], [0, 1]);
+
+
 
   useEffect(() => {
     // Spotlight on machined panels
@@ -154,16 +153,7 @@ export default function LandingPage() {
       });
     });
 
-    const cursor = document.getElementById('cursor');
-    const follower = document.getElementById('cursor-follower');
-    const moveCursor = (e: MouseEvent) => {
-      if (cursor && follower) {
-        cursor.style.transform = `translate3d(${e.clientX - 3}px, ${e.clientY - 3}px, 0)`;
-        follower.style.transform = `translate3d(${e.clientX - 18}px, ${e.clientY - 18}px, 0)`;
-      }
-    };
-    window.addEventListener('mousemove', moveCursor);
-
+    // Removed custom cursor logic
     const parallaxLayers = document.querySelectorAll<HTMLElement>('.parallax-layer');
     const handleScroll = () => {
       const scrolled = window.scrollY;
@@ -262,7 +252,6 @@ export default function LandingPage() {
     });
 
     return () => {
-      window.removeEventListener('mousemove', moveCursor);
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('mousemove', handleHeroMove);
       observer.disconnect();
@@ -274,8 +263,6 @@ export default function LandingPage() {
   return (
     <div className="text-zinc-800">
       <ScrollProgressBar />
-      <div id="cursor"></div>
-      <div id="cursor-follower"></div>
 
       {/* Ambient Background Orbs */}
       <AmbientOrbs />
@@ -285,8 +272,8 @@ export default function LandingPage() {
 
       {/* WebGL Background + Noise */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-          <canvas id="webgl-canvas" className="absolute inset-0 opacity-[0.35]"></canvas>
-          <div className="noise-overlay absolute inset-0"></div>
+        <canvas id="webgl-canvas" className="absolute inset-0 opacity-[0.35]"></canvas>
+        <div className="noise-overlay absolute inset-0"></div>
       </div>
 
       {/* Nav */}
@@ -294,7 +281,7 @@ export default function LandingPage() {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] as const }}
           className="glass-header machined-panel px-6 py-3 flex items-center justify-between w-full max-w-6xl pointer-events-auto shadow-2xl"
         >
           <div className="text-xl font-black text-zinc-950 tracking-tighter flex items-center gap-2 uppercase">
@@ -335,8 +322,8 @@ export default function LandingPage() {
               className="max-w-2xl"
             >
               <motion.h1 variants={fadeUp} className="text-6xl md:text-[80px] font-black text-zinc-950 tracking-tighter leading-[0.95] mb-8 uppercase overflow-hidden">
-                <span>Qualify</span><br/>
-                <span>every</span><br/>
+                <span>Qualify</span><br />
+                <span>every</span><br />
                 <span className="gradient-text-gold">lead.</span>
               </motion.h1>
               <motion.p variants={fadeUp} className="text-lg text-zinc-500 mb-10 font-medium leading-relaxed max-w-md">
@@ -415,22 +402,22 @@ export default function LandingPage() {
 
                 {/* Voice Coil Windings */}
                 <div className="coil-ring w-[240px] h-[240px] animate-[rotate-cw_22s_linear_infinite]" style={{ transform: 'translateZ(80px)' }}>
-                    <div className="coil-wire inset-0 border-[3px]"></div>
-                    <div className="coil-wire inset-1 border-[2px] opacity-70"></div>
-                    <div className="coil-wire inset-2 border-[1px] opacity-40"></div>
-                    <div className="absolute top-0 left-1/2 w-4 h-4 bg-zinc-900 rounded-full shadow-[0_0_15px_rgba(0,0,0,0.5)] -translate-x-1/2 -translate-y-1/2 border border-emerald-500"></div>
+                  <div className="coil-wire inset-0 border-[3px]"></div>
+                  <div className="coil-wire inset-1 border-[2px] opacity-70"></div>
+                  <div className="coil-wire inset-2 border-[1px] opacity-40"></div>
+                  <div className="absolute top-0 left-1/2 w-4 h-4 bg-zinc-900 rounded-full shadow-[0_0_15px_rgba(0,0,0,0.5)] -translate-x-1/2 -translate-y-1/2 border border-emerald-500"></div>
                 </div>
-                
+
                 <div className="coil-ring w-[380px] h-[380px] border-zinc-300/60 animate-[rotate-ccw_35s_linear_infinite]" style={{ transform: 'translateZ(30px)' }}>
-                    <div className="absolute bottom-1/4 right-0 w-4 h-4 bg-amber-400 rounded-full shadow-[0_0_20px_rgba(212,175,55,0.8)]" style={{ animation: 'glow-pulse 3s ease-in-out infinite' }}></div>
-                    <div className="absolute top-1/4 left-0 w-3 h-3 bg-emerald-500 rounded-full shadow-[0_0_15px_rgba(31,138,112,0.8)]"></div>
+                  <div className="absolute bottom-1/4 right-0 w-4 h-4 bg-amber-400 rounded-full shadow-[0_0_20px_rgba(212,175,55,0.8)]" style={{ animation: 'glow-pulse 3s ease-in-out infinite' }}></div>
+                  <div className="absolute top-1/4 left-0 w-3 h-3 bg-emerald-500 rounded-full shadow-[0_0_15px_rgba(31,138,112,0.8)]"></div>
                 </div>
 
                 <div className="coil-ring w-[540px] h-[540px] border-[2px] border-zinc-300/40 animate-[rotate-cw_50s_linear_infinite]" style={{ transform: 'translateZ(-40px)' }}>
-                    <div className="absolute top-0 left-1/2 w-4 h-8 bg-zinc-400 -translate-x-1/2 -translate-y-1/2 rounded-sm shadow-md"></div>
-                    <div className="absolute bottom-0 left-1/2 w-4 h-8 bg-zinc-400 -translate-x-1/2 translate-y-1/2 rounded-sm shadow-md"></div>
-                    <div className="absolute left-0 top-1/2 w-8 h-4 bg-zinc-400 -translate-x-1/2 -translate-y-1/2 rounded-sm shadow-md"></div>
-                    <div className="absolute right-0 top-1/2 w-8 h-4 bg-zinc-400 translate-x-1/2 -translate-y-1/2 rounded-sm shadow-md"></div>
+                  <div className="absolute top-0 left-1/2 w-4 h-8 bg-zinc-400 -translate-x-1/2 -translate-y-1/2 rounded-sm shadow-md"></div>
+                  <div className="absolute bottom-0 left-1/2 w-4 h-8 bg-zinc-400 -translate-x-1/2 translate-y-1/2 rounded-sm shadow-md"></div>
+                  <div className="absolute left-0 top-1/2 w-8 h-4 bg-zinc-400 -translate-x-1/2 -translate-y-1/2 rounded-sm shadow-md"></div>
+                  <div className="absolute right-0 top-1/2 w-8 h-4 bg-zinc-400 translate-x-1/2 -translate-y-1/2 rounded-sm shadow-md"></div>
                 </div>
               </div>
             </motion.div>
@@ -453,8 +440,8 @@ export default function LandingPage() {
             <div className="flex items-center gap-24 animate-marquee whitespace-nowrap opacity-60 grayscale font-black text-3xl tracking-tight text-zinc-800 w-max">
               {['AUTODESK', 'Dolby', 'SMARTLING', 'Reddit', 'ANTHROPIC', 'DocuSign', 'Vercel', 'Atlassian', 'HubSpot', 'Shopify',
                 'AUTODESK', 'Dolby', 'SMARTLING', 'Reddit', 'ANTHROPIC', 'DocuSign', 'Vercel', 'Atlassian', 'HubSpot', 'Shopify'].map((name, i) => (
-                <span key={i}>{name}</span>
-              ))}
+                  <span key={i}>{name}</span>
+                ))}
             </div>
           </div>
         </section>
@@ -535,7 +522,7 @@ export default function LandingPage() {
             variants={fadeUp}
             className="flex items-center justify-center gap-2 text-[11px] text-zinc-400 font-bold uppercase tracking-widest mb-14"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8M12 17v4" /></svg>
             Hover cards to flip
           </motion.div>
 
@@ -557,7 +544,7 @@ export default function LandingPage() {
                 flow: 'Lead → Call → Score',
               },
               {
-                svgIcon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+                svgIcon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>,
                 iconBg: 'linear-gradient(135deg, #c49a28 0%, #8a6920 100%)',
                 glowColor: 'rgba(212,175,55,0.3)',
                 accentColor: '#c49a28',
@@ -572,7 +559,7 @@ export default function LandingPage() {
                 flow: 'Call → Analyze → Score',
               },
               {
-                svgIcon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 013 3v7a3 3 0 01-6 0V5a3 3 0 013-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>,
+                svgIcon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 013 3v7a3 3 0 01-6 0V5a3 3 0 013-3z" /><path d="M19 10v2a7 7 0 01-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></svg>,
                 iconBg: 'linear-gradient(135deg, #1F8A70 0%, #0F3D3E 100%)',
                 glowColor: 'rgba(15,61,62,0.25)',
                 accentColor: '#1F8A70',
@@ -587,7 +574,7 @@ export default function LandingPage() {
                 flow: 'Call → Transcribe → Insights',
               },
               {
-                svgIcon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>,
+                svgIcon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" /></svg>,
                 iconBg: 'linear-gradient(135deg, #a67c2e 0%, #c49a28 100%)',
                 glowColor: 'rgba(212,175,55,0.25)',
                 accentColor: '#c49a28',
@@ -654,7 +641,7 @@ export default function LandingPage() {
 
                       <div className="mt-auto pt-3 border-t border-white/10 flex items-center justify-between">
                         <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{f.flow}</span>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={f.accentColor} strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={f.accentColor} strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
                       </div>
                     </div>
                   </div>
@@ -667,145 +654,145 @@ export default function LandingPage() {
 
         {/* Feature Spotlight (UI Mockup) */}
         <section className="py-24 px-6 max-w-7xl mx-auto relative z-10 perspective-container">
-            <div className="grid lg:grid-cols-2 gap-16 items-start">
-                {/* Left Text Content */}
-                <motion.div
-                  initial="hidden"
-                  whileInView="visible"
-                  viewport={{ once: true, margin: "-50px" }}
-                  variants={stagger}
-                  className="order-2 lg:order-1 parallax-layer pt-4"
-                  data-speed="0.02"
-                >
-                    <motion.div variants={slideLeft} className="text-xs uppercase tracking-[0.25em] text-emerald-600 font-black mb-4">Voice AI Technology</motion.div>
-                    <motion.h2 variants={slideLeft} className="text-4xl md:text-5xl font-black tracking-tighter text-zinc-950 mb-12 uppercase leading-[1.1]">
-                        Call every lead,<br/>
-                        <span className="text-zinc-400">qualify them automatically.</span>
-                    </motion.h2>
-                    <motion.ul variants={stagger} className="space-y-6">
-                        <motion.li variants={slideLeft} className="flex items-start gap-4">
-                            <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0 border border-emerald-100">
-                              <PhoneCall className="w-5 h-5 text-emerald-600" strokeWidth={1.75} />
-                            </div>
-                            <span className="text-lg text-zinc-600 font-medium pt-1">AI calls leads with natural, human-like conversations</span>
-                        </motion.li>
-                        <motion.li variants={slideLeft} className="flex items-start gap-4">
-                            <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0 border border-emerald-100">
-                              <Zap className="w-5 h-5 text-emerald-600" strokeWidth={1.75} />
-                            </div>
-                            <span className="text-lg text-zinc-600 font-medium pt-1">Qualify and score leads in real-time during each call</span>
-                        </motion.li>
-                        <motion.li variants={slideLeft} className="flex items-start gap-4">
-                            <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0 border border-emerald-100">
-                              <Target className="w-5 h-5 text-emerald-600" strokeWidth={1.75} />
-                            </div>
-                            <span className="text-lg text-zinc-600 font-medium pt-1">Deliver scored leads with transcripts to your CRM</span>
-                        </motion.li>
-                    </motion.ul>
-                </motion.div>
+          <div className="grid lg:grid-cols-2 gap-16 items-start">
+            {/* Left Text Content */}
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-50px" }}
+              variants={stagger}
+              className="order-2 lg:order-1 parallax-layer pt-4"
+              data-speed="0.02"
+            >
+              <motion.div variants={slideLeft} className="text-xs uppercase tracking-[0.25em] text-emerald-600 font-black mb-4">Voice AI Technology</motion.div>
+              <motion.h2 variants={slideLeft} className="text-4xl md:text-5xl font-black tracking-tighter text-zinc-950 mb-12 uppercase leading-[1.1]">
+                Call every lead,<br />
+                <span className="text-zinc-400">qualify them automatically.</span>
+              </motion.h2>
+              <motion.ul variants={stagger} className="space-y-6">
+                <motion.li variants={slideLeft} className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0 border border-emerald-100">
+                    <PhoneCall className="w-5 h-5 text-emerald-600" strokeWidth={1.75} />
+                  </div>
+                  <span className="text-lg text-zinc-600 font-medium pt-1">AI calls leads with natural, human-like conversations</span>
+                </motion.li>
+                <motion.li variants={slideLeft} className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0 border border-emerald-100">
+                    <Zap className="w-5 h-5 text-emerald-600" strokeWidth={1.75} />
+                  </div>
+                  <span className="text-lg text-zinc-600 font-medium pt-1">Qualify and score leads in real-time during each call</span>
+                </motion.li>
+                <motion.li variants={slideLeft} className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0 border border-emerald-100">
+                    <Target className="w-5 h-5 text-emerald-600" strokeWidth={1.75} />
+                  </div>
+                  <span className="text-lg text-zinc-600 font-medium pt-1">Deliver scored leads with transcripts to your CRM</span>
+                </motion.li>
+              </motion.ul>
+            </motion.div>
 
-                {/* Right Mockup Console */}
-                <motion.div
-                  initial="hidden"
-                  whileInView="visible"
-                  viewport={{ once: true, margin: "-50px" }}
-                  variants={slideRight}
-                  className="order-1 lg:order-2 parallax-layer"
-                  data-speed="0.02"
-                >
-                    <div className="reveal-3d active glass-dark rounded-[32px] p-4 shadow-[0_20px_60px_rgba(15,61,62,0.3)] border border-zinc-800 flex flex-col relative overflow-hidden transform-style-3d mockup-float min-h-[500px] h-auto">
-                        {/* Header */}
-                        <div className="h-12 bg-zinc-900 rounded-t-2xl border-b border-zinc-800 flex items-center px-6 gap-3 shrink-0 relative z-30">
-                            <div className="flex gap-2">
-                                <div className="w-3 h-3 rounded-full bg-red-500/60"></div>
-                                <div className="w-3 h-3 rounded-full bg-amber-400/60"></div>
-                                <div className="w-3 h-3 rounded-full bg-emerald-500/60"></div>
-                            </div>
-                            <div className="mx-auto flex items-center gap-2 text-xs font-bold text-emerald-400 bg-emerald-950/50 border border-emerald-900/50 px-4 py-1.5 rounded-md uppercase tracking-widest">
-                                <Waveform bars={3} color="#34d399" />
-                                VoiceQual Console
-                            </div>
-                        </div>
+            {/* Right Mockup Console */}
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-50px" }}
+              variants={slideRight}
+              className="order-1 lg:order-2 parallax-layer"
+              data-speed="0.02"
+            >
+              <div className="reveal-3d active glass-dark rounded-[32px] p-4 shadow-[0_20px_60px_rgba(15,61,62,0.3)] border border-zinc-800 flex flex-col relative overflow-hidden transform-style-3d mockup-float min-h-[500px] h-auto">
+                {/* Header */}
+                <div className="h-12 bg-zinc-900 rounded-t-2xl border-b border-zinc-800 flex items-center px-6 gap-3 shrink-0 relative z-30">
+                  <div className="flex gap-2">
+                    <div className="w-3 h-3 rounded-full bg-red-500/60"></div>
+                    <div className="w-3 h-3 rounded-full bg-amber-400/60"></div>
+                    <div className="w-3 h-3 rounded-full bg-emerald-500/60"></div>
+                  </div>
+                  <div className="mx-auto flex items-center gap-2 text-xs font-bold text-emerald-400 bg-emerald-950/50 border border-emerald-900/50 px-4 py-1.5 rounded-md uppercase tracking-widest">
+                    <Waveform bars={3} color="#34d399" />
+                    VoiceQual Console
+                  </div>
+                </div>
 
-                        {/* Body */}
-                        <div className="flex-1 bg-zinc-950 rounded-b-2xl p-6 flex flex-col relative overflow-hidden">
-                            <div className="absolute inset-0 pointer-events-none opacity-20 mix-blend-overlay" style={{background: 'repeating-linear-gradient(0deg, #000, #000 2px, transparent 2px, transparent 4px)'}}></div>
-                            <div className="absolute inset-0 bg-emerald-500/5 mix-blend-screen pointer-events-none animate-pulse" style={{animationDuration: '4s'}}></div>
+                {/* Body */}
+                <div className="flex-1 bg-zinc-950 rounded-b-2xl p-6 flex flex-col relative overflow-hidden">
+                  <div className="absolute inset-0 pointer-events-none opacity-20 mix-blend-overlay" style={{ background: 'repeating-linear-gradient(0deg, #000, #000 2px, transparent 2px, transparent 4px)' }}></div>
+                  <div className="absolute inset-0 bg-emerald-500/5 mix-blend-screen pointer-events-none animate-pulse" style={{ animationDuration: '4s' }}></div>
 
-                            {/* Active call header */}
-                            <div className="flex items-center justify-between mb-5 relative z-20 mockup-child mockup-child-1">
-                                <div className="flex items-center gap-2 text-xs font-bold text-zinc-500 uppercase tracking-widest">
-                                    <PhoneCall className="w-3 h-3 text-emerald-400" /> Live Call Session
-                                </div>
-                                <div className="flex items-center gap-1.5 text-[10px] font-black text-emerald-400 uppercase tracking-widest">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block" />
-                                    Recording
-                                </div>
-                            </div>
-
-                            <div className="flex-1 overflow-hidden flex flex-col gap-4 relative z-20">
-
-                                {/* Lead profile card */}
-                                <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl p-4 scan-card mockup-child mockup-child-2">
-                                    <div className="flex items-center gap-2 text-[10px] font-bold text-emerald-400 mb-3 uppercase tracking-widest">
-                                        <Users className="w-3 h-3" /> Lead Profile
-                                    </div>
-                                    <div className="flex items-center justify-between mb-2">
-                                        <div>
-                                            <p className="text-sm text-white font-bold type-1">Priya Menon</p>
-                                            <p className="text-[11px] text-zinc-500 font-medium fade-in-delay-1">VP Sales · Infosys Ltd · Mumbai</p>
-                                        </div>
-                                        {/* BANT score */}
-                                        <div className="flex flex-col items-end">
-                                            <span className="text-xl font-black text-emerald-400 leading-none">9.1</span>
-                                            <span className="text-[9px] text-zinc-600 uppercase tracking-widest">BANT Score</span>
-                                        </div>
-                                    </div>
-                                    {/* BANT bars */}
-                                    <div className="grid grid-cols-4 gap-2 mt-3">
-                                        {[
-                                            { label: 'Budget', val: 92, color: '#34d399' },
-                                            { label: 'Authority', val: 88, color: '#34d399' },
-                                            { label: 'Need', val: 95, color: '#34d399' },
-                                            { label: 'Timeline', val: 78, color: '#fbbf24' },
-                                        ].map(b => (
-                                            <div key={b.label}>
-                                                <div className="text-[8px] text-zinc-600 uppercase tracking-wider mb-1">{b.label}</div>
-                                                <div className="h-1 rounded-full bg-zinc-800 overflow-hidden">
-                                                    <div className="h-full rounded-full transition-all" style={{ width: `${b.val}%`, backgroundColor: b.color }} />
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Sentiment & AI insight */}
-                                <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl p-4 scan-card mockup-child mockup-child-3">
-                                    <div className="flex items-center gap-2 text-[10px] font-bold text-amber-400 mb-2 uppercase tracking-widest">
-                                        <Lightbulb className="w-3 h-3" /> AI Sentiment Analysis
-                                    </div>
-                                    <p className="text-sm text-white font-bold mb-1 type-2">"Interested in Q3 rollout — budget confirmed"</p>
-                                    <p className="text-[11px] text-zinc-500 font-medium leading-relaxed fade-in-delay-2">
-                                        Positive intent detected. Decision-maker engaged. Recommend immediate CRM push.
-                                    </p>
-                                    <div className="flex items-center gap-3 mt-3">
-                                        <span className="text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest" style={{ background: 'rgba(52,211,153,0.12)', color: '#34d399', border: '1px solid rgba(52,211,153,0.25)' }}>HOT Lead</span>
-                                        <span className="text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest" style={{ background: 'rgba(251,191,36,0.1)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.2)' }}>Positive Tone</span>
-                                        <span className="text-[9px] text-zinc-600 ml-auto">2m 47s</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* CTA button */}
-                            <div className="relative z-20 mt-4 mockup-child mockup-child-4">
-                                <button className="magnetic-btn press-effect w-full bg-emerald-950/40 border border-emerald-900 hover:bg-emerald-900/60 transition-colors py-3.5 rounded-xl flex items-center justify-center gap-2 text-sm font-bold text-emerald-400 shadow-inner uppercase tracking-widest">
-                                    <span className="magnetic-btn-inner flex items-center gap-2"><Target className="w-4 h-4" /> Qualify &amp; Push to CRM</span>
-                                </button>
-                            </div>
-                        </div>
+                  {/* Active call header */}
+                  <div className="flex items-center justify-between mb-5 relative z-20 mockup-child mockup-child-1">
+                    <div className="flex items-center gap-2 text-xs font-bold text-zinc-500 uppercase tracking-widest">
+                      <PhoneCall className="w-3 h-3 text-emerald-400" /> Live Call Session
                     </div>
-                </motion.div>
-            </div>
+                    <div className="flex items-center gap-1.5 text-[10px] font-black text-emerald-400 uppercase tracking-widest">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block" />
+                      Recording
+                    </div>
+                  </div>
+
+                  <div className="flex-1 overflow-hidden flex flex-col gap-4 relative z-20">
+
+                    {/* Lead profile card */}
+                    <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl p-4 scan-card mockup-child mockup-child-2">
+                      <div className="flex items-center gap-2 text-[10px] font-bold text-emerald-400 mb-3 uppercase tracking-widest">
+                        <Users className="w-3 h-3" /> Lead Profile
+                      </div>
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <p className="text-sm text-white font-bold type-1">Priya Menon</p>
+                          <p className="text-[11px] text-zinc-500 font-medium fade-in-delay-1">VP Sales · Infosys Ltd · Mumbai</p>
+                        </div>
+                        {/* BANT score */}
+                        <div className="flex flex-col items-end">
+                          <span className="text-xl font-black text-emerald-400 leading-none">9.1</span>
+                          <span className="text-[9px] text-zinc-600 uppercase tracking-widest">BANT Score</span>
+                        </div>
+                      </div>
+                      {/* BANT bars */}
+                      <div className="grid grid-cols-4 gap-2 mt-3">
+                        {[
+                          { label: 'Budget', val: 92, color: '#34d399' },
+                          { label: 'Authority', val: 88, color: '#34d399' },
+                          { label: 'Need', val: 95, color: '#34d399' },
+                          { label: 'Timeline', val: 78, color: '#fbbf24' },
+                        ].map(b => (
+                          <div key={b.label}>
+                            <div className="text-[8px] text-zinc-600 uppercase tracking-wider mb-1">{b.label}</div>
+                            <div className="h-1 rounded-full bg-zinc-800 overflow-hidden">
+                              <div className="h-full rounded-full transition-all" style={{ width: `${b.val}%`, backgroundColor: b.color }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Sentiment & AI insight */}
+                    <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl p-4 scan-card mockup-child mockup-child-3">
+                      <div className="flex items-center gap-2 text-[10px] font-bold text-amber-400 mb-2 uppercase tracking-widest">
+                        <Lightbulb className="w-3 h-3" /> AI Sentiment Analysis
+                      </div>
+                      <p className="text-sm text-white font-bold mb-1 type-2">"Interested in Q3 rollout — budget confirmed"</p>
+                      <p className="text-[11px] text-zinc-500 font-medium leading-relaxed fade-in-delay-2">
+                        Positive intent detected. Decision-maker engaged. Recommend immediate CRM push.
+                      </p>
+                      <div className="flex items-center gap-3 mt-3">
+                        <span className="text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest" style={{ background: 'rgba(52,211,153,0.12)', color: '#34d399', border: '1px solid rgba(52,211,153,0.25)' }}>HOT Lead</span>
+                        <span className="text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest" style={{ background: 'rgba(251,191,36,0.1)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.2)' }}>Positive Tone</span>
+                        <span className="text-[9px] text-zinc-600 ml-auto">2m 47s</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* CTA button */}
+                  <div className="relative z-20 mt-4 mockup-child mockup-child-4">
+                    <button className="magnetic-btn press-effect w-full bg-emerald-950/40 border border-emerald-900 hover:bg-emerald-900/60 transition-colors py-3.5 rounded-xl flex items-center justify-center gap-2 text-sm font-bold text-emerald-400 shadow-inner uppercase tracking-widest">
+                      <span className="magnetic-btn-inner flex items-center gap-2"><Target className="w-4 h-4" /> Qualify &amp; Push to CRM</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
         </section>
 
         {/* Before/After */}
@@ -846,44 +833,44 @@ export default function LandingPage() {
 
         {/* Capabilities (Bento 2) */}
         <section className="py-32 px-6 max-w-7xl mx-auto relative z-10" id="stack-section">
-            <div className="absolute top-20 right-0 w-40 h-40 rotating-ring opacity-20 pointer-events-none" />
-            <div className="blob blob--gold absolute -top-20 right-0 w-64 h-64 opacity-15 z-0" style={{ animationDelay: '3s' }} />
+          <div className="absolute top-20 right-0 w-40 h-40 rotating-ring opacity-20 pointer-events-none" />
+          <div className="blob blob--gold absolute -top-20 right-0 w-64 h-64 opacity-15 z-0" style={{ animationDelay: '3s' }} />
 
-            <motion.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-50px" }}
-              variants={fadeUp}
-              className="mb-16 flex flex-col md:flex-row md:items-end justify-between gap-8 relative z-10"
-            >
-                <div className="max-w-2xl">
-                    <div className="ornament-line text-xs font-black text-amber-500 uppercase tracking-widest mb-4">The Stack</div>
-                    <h2 className="text-4xl md:text-6xl font-black text-zinc-950 tracking-tighter mb-4 uppercase">The Qualification Stack.</h2>
-                    <p className="text-lg text-zinc-500 font-medium">From first contact to CRM entry—scheduling, calling, scoring, and syncing are handled without a human in the loop.</p>
-                </div>
-            </motion.div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
-                {[
-                  { accent: 'text-amber-500', accentBg: 'rgba(212,175,55,0.04)', title: 'Automated Outbound Calling', sub: '< 5 min avg first call', desc: 'Reach every lead within minutes. Handles scheduling, retries, and call windows—zero manual dialing.' },
-                  { accent: 'text-emerald-600', accentBg: 'rgba(31,138,112,0.05)', title: 'BANT Qualification Scoring', sub: '4 signals per call', desc: 'Each call is scored across Budget, Authority, Need, and Timeline with full audit trails.' },
-                  { accent: 'text-amber-500', accentBg: 'rgba(212,175,55,0.04)', title: 'CRM Sync & Webhooks', sub: '< 1 sec sync latency', desc: 'Push qualified lead data directly to Salesforce, HubSpot, or Pipedrive the moment a call completes.' },
-                  { accent: 'text-emerald-600', accentBg: 'rgba(31,138,112,0.05)', title: 'Pipeline Analytics', sub: 'Real-time dashboards', desc: 'Track conversion rates, call volumes, and qualification trends. Understand exactly where leads drop off.' },
-                  { accent: 'text-amber-500', accentBg: 'rgba(212,175,55,0.04)', title: 'Configurable Rules', sub: 'No-code configuration', desc: 'Set calling windows, retry delays, score thresholds, and SLA targets through a simple admin interface.' },
-                  { accent: 'text-emerald-600', accentBg: 'rgba(31,138,112,0.05)', title: 'Compliance Built In', sub: 'SOC 2 Type II certified', desc: 'DND checks, consent management, call time restrictions, and auto-deletion of recordings after 90 days.' },
-                ].map((item, i) => (
-                  <ScrollReveal3D key={i} delay={i * 0.1}>
-                    <div className="tilt-card h-full">
-                      <div className="tilt-card-inner machined-panel hover-lift p-8 group flex flex-col relative overflow-hidden" style={{ background: `linear-gradient(145deg, #ffffff, ${item.accentBg})` }}>
-                        <div className="tilt-shine" />
-                        <div className={`text-xs font-black ${item.accent} uppercase tracking-widest mb-4`}>{item.sub}</div>
-                        <h3 className="text-2xl font-black text-zinc-950 tracking-tighter mb-2 uppercase">{item.title}</h3>
-                        <p className="text-zinc-600 font-medium text-sm leading-relaxed">{item.desc}</p>
-                      </div>
-                    </div>
-                  </ScrollReveal3D>
-                ))}
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-50px" }}
+            variants={fadeUp}
+            className="mb-16 flex flex-col md:flex-row md:items-end justify-between gap-8 relative z-10"
+          >
+            <div className="max-w-2xl">
+              <div className="ornament-line text-xs font-black text-amber-500 uppercase tracking-widest mb-4">The Stack</div>
+              <h2 className="text-4xl md:text-6xl font-black text-zinc-950 tracking-tighter mb-4 uppercase">The Qualification Stack.</h2>
+              <p className="text-lg text-zinc-500 font-medium">From first contact to CRM entry—scheduling, calling, scoring, and syncing are handled without a human in the loop.</p>
             </div>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
+            {[
+              { accent: 'text-amber-500', accentBg: 'rgba(212,175,55,0.04)', title: 'Automated Outbound Calling', sub: '< 5 min avg first call', desc: 'Reach every lead within minutes. Handles scheduling, retries, and call windows—zero manual dialing.' },
+              { accent: 'text-emerald-600', accentBg: 'rgba(31,138,112,0.05)', title: 'BANT Qualification Scoring', sub: '4 signals per call', desc: 'Each call is scored across Budget, Authority, Need, and Timeline with full audit trails.' },
+              { accent: 'text-amber-500', accentBg: 'rgba(212,175,55,0.04)', title: 'CRM Sync & Webhooks', sub: '< 1 sec sync latency', desc: 'Push qualified lead data directly to Salesforce, HubSpot, or Pipedrive the moment a call completes.' },
+              { accent: 'text-emerald-600', accentBg: 'rgba(31,138,112,0.05)', title: 'Pipeline Analytics', sub: 'Real-time dashboards', desc: 'Track conversion rates, call volumes, and qualification trends. Understand exactly where leads drop off.' },
+              { accent: 'text-amber-500', accentBg: 'rgba(212,175,55,0.04)', title: 'Configurable Rules', sub: 'No-code configuration', desc: 'Set calling windows, retry delays, score thresholds, and SLA targets through a simple admin interface.' },
+              { accent: 'text-emerald-600', accentBg: 'rgba(31,138,112,0.05)', title: 'Compliance Built In', sub: 'SOC 2 Type II certified', desc: 'DND checks, consent management, call time restrictions, and auto-deletion of recordings after 90 days.' },
+            ].map((item, i) => (
+              <ScrollReveal3D key={i} delay={i * 0.1}>
+                <div className="tilt-card h-full">
+                  <div className="tilt-card-inner machined-panel hover-lift p-8 group flex flex-col relative overflow-hidden" style={{ background: `linear-gradient(145deg, #ffffff, ${item.accentBg})` }}>
+                    <div className="tilt-shine" />
+                    <div className={`text-xs font-black ${item.accent} uppercase tracking-widest mb-4`}>{item.sub}</div>
+                    <h3 className="text-2xl font-black text-zinc-950 tracking-tighter mb-2 uppercase">{item.title}</h3>
+                    <p className="text-zinc-600 font-medium text-sm leading-relaxed">{item.desc}</p>
+                  </div>
+                </div>
+              </ScrollReveal3D>
+            ))}
+          </div>
         </section>
 
         {/* Pricing */}
