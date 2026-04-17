@@ -212,8 +212,7 @@ function LiveCallSimulator() {
           </div>
         </div>
         <motion.button onClick={() => setIsCalling(!isCalling)} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-          className="px-5 py-2 rounded-xl text-xs font-bold text-white shadow-lg"
-          style={{ background: isCalling ? "#0F3D3E" : "#1F8A70" }}>
+          className={`px-5 py-2 text-xs font-bold shadow-lg ${isCalling ? "bg-zinc-900 text-white rounded-xl" : "btn-royal rounded-xl"}`}>
           {isCalling ? "Terminate" : "Simulate Call"}
         </motion.button>
       </div>
@@ -280,7 +279,7 @@ export default function Dashboard() {
     <DashboardLayout>
       <div className="space-y-6">
           <motion.div {...fadeUp(0)}>
-            <h1 className="text-2xl font-bold tracking-tight" style={{ color: "#09090b" }}>Good morning 👋</h1>
+            <h1 className="text-3xl font-serif text-zinc-950 tracking-tight">Good morning 👋</h1>
             <p className="text-sm mt-1" style={{ color: "#71717a" }}>Real-time lead qualification performance.</p>
           </motion.div>
 

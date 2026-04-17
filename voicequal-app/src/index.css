@@ -1,16 +1,31 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* =============================================
+   COLOR PALETTE — 6 Design Tokens
+   ============================================= */
 :root {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Outfit', 'Inter', sans-serif;
+  /* Primary tokens */
   --gold: #D4AF37;
+  --gold-light: #E8C84A;
+  --gold-dark: #a67c2e;
   --emerald-teal: #1F8A70;
+  --emerald-light: #28B893;
   --deep-moss: #0F3D3E;
+  --deep-moss-light: #1a5c5e;
+  /* Glass tokens */
   --glass-border: rgba(15, 61, 62, 0.15);
   --glass-bg: rgba(255, 255, 255, 0.65);
+  --glass-bg-strong: rgba(255, 255, 255, 0.85);
   --glass-shadow: 0 12px 40px -5px rgba(0, 0, 0, 0.1);
+  /* Depth shadows */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 24px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.04);
+  --shadow-lg: 0 20px 60px rgba(0,0,0,0.1), 0 8px 24px rgba(0,0,0,0.06);
+  --shadow-xl: 0 30px 80px rgba(0,0,0,0.15), 0 12px 40px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04);
   color-scheme: light;
 }
 
@@ -19,13 +34,16 @@ html, body {
   background: radial-gradient(circle at 50% 0%, #ffffff 0%, #e2e8f0 100%);
   min-height: 100vh;
   cursor: none;
+  overflow-x: hidden;
 }
 
 #root {
   min-height: 100vh;
 }
 
-/* Dashboard CSS vars for shadcn-like tokens */
+/* =============================================
+   DASHBOARD CSS VARS (shadcn-like tokens)
+   ============================================= */
 :root {
   --foreground: #09090b;
   --muted-foreground: #71717a;
@@ -37,98 +55,11 @@ html, body {
 .text-muted-foreground { color: var(--muted-foreground); }
 .border-border { border-color: var(--border); }
 
-/* Premium card */
-.premium-card {
-  background: rgba(255,255,255,0.85);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(0,0,0,0.07);
-  border-radius: 20px;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.06);
-}
+/* =============================================
+   1. GLASSMORPHISM — 3 Frosted Glass Effects
+   ============================================= */
 
-/* Tilt card */
-.tilt-card { perspective: 1000px; }
-.tilt-card-inner {
-  transition: transform 0.15s ease-out;
-  transform-style: preserve-3d;
-}
-.tilt-shine {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: radial-gradient(circle at var(--shine-x, 50%) var(--shine-y, 50%), rgba(255,255,255,0.15), transparent 60%);
-  z-index: 2;
-}
-
-/* Stat card */
-.stat-card { border-radius: 20px; }
-
-/* Depth shadow */
-.depth-shadow-sm { box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04); }
-
-/* Shimmer loading */
-.shimmer {
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-}
-@keyframes shimmer { to { background-position: -200% 0; } }
-
-/* Ornament line */
-.ornament-line {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.ornament-line::before, .ornament-line::after {
-  content: "";
-  flex: 1;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(212,175,55,0.2), transparent);
-}
-
-/* Rotating ring */
-.rotating-ring {
-  border: 1px solid rgba(212,175,55,0.15);
-  border-radius: 50%;
-  animation: rotate-cw 20s linear infinite;
-}
-
-/* Activity row hover */
-.activity-row:hover { background: rgba(31,138,112,0.02); }
-
-/* Ambient orb */
-.ambient-orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(60px);
-  pointer-events: none;
-  animation: pulse-orb 8s ease-in-out infinite;
-}
-@keyframes pulse-orb { 0%, 100% { transform: scale(1); opacity: 0.5; } 50% { transform: scale(1.1); opacity: 0.8; } }
-
-/* Particles */
-.particle { position: absolute; border-radius: 50%; }
-.particle--gold { background: rgba(212,175,55,0.4); }
-.particle--emerald { background: rgba(31,138,112,0.4); }
-.particle--diamond { background: rgba(15,61,62,0.3); }
-@keyframes float-particle {
-  0%, 100% { transform: translateY(0) translateX(0); opacity: 0; }
-  20% { opacity: 1; }
-  80% { opacity: 1; }
-  50% { transform: translateY(-60px) translateX(20px); }
-}
-
-/* Landing page animations */
-@keyframes float-slow { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-12px); } }
-@keyframes rotate-cw { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-@keyframes rotate-ccw { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
-@keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-
-.animate-marquee { animation: marquee 35s linear infinite; }
-.mask-edge { -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent); }
-
-/* Glass panel */
+/* Default glass panel (cards, containers) */
 .machined-panel {
   background: var(--glass-bg);
   backdrop-filter: blur(24px);
@@ -149,11 +80,444 @@ html, body {
 .machined-panel:hover::before { opacity: 1; }
 .machined-panel > * { position: relative; z-index: 1; }
 
-/* Coil rings */
+/* Stronger glass (header/nav) */
+.glass-header {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(32px) saturate(1.4);
+  -webkit-backdrop-filter: blur(32px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+/* Dark glass (stat cards, dark sections) */
+.glass-dark {
+  background: rgba(10, 14, 26, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.05);
+}
+
+/* App-Specific Layout Classes */
+.admin-bg {
+  background-color: #f8fafc;
+  background-image: radial-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 0);
+  background-size: 24px 24px;
+}
+
+.btn-royal {
+  background-color: var(--emerald-teal);
+  color: white;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+.btn-royal::after {
+  content: "";
+  position: absolute;
+  top: 0; left: -100%; width: 50%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.4), transparent);
+  animation: royal-shimmer 3s infinite;
+}
+@keyframes royal-shimmer {
+  100% { left: 200%; }
+}
+
+.gold-border {
+  position: relative;
+  border-radius: inherit;
+}
+.gold-border::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: conic-gradient(from 0deg, var(--gold-dark), var(--gold-light), var(--gold), var(--gold-dark));
+  animation: rotate-gradient 4s linear infinite;
+  z-index: -1;
+}
+@keyframes rotate-gradient {
+  100% { transform: rotate(360deg); }
+}
+
+/* =============================================
+   2. 3D TILT CARDS — Perspective + Mouse Track
+   ============================================= */
+.tilt-card { perspective: 1000px; }
+.tilt-card-inner {
+  transition: transform 0.15s ease-out;
+  transform-style: preserve-3d;
+}
+.tilt-shine {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at var(--shine-x, 50%) var(--shine-y, 50%), rgba(255,255,255,0.15), transparent 60%);
+  z-index: 2;
+  border-radius: inherit;
+}
+.tilt-gold-shine {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at var(--shine-x, 50%) var(--shine-y, 50%), rgba(212,175,55,0.12), transparent 50%);
+  z-index: 2;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.tilt-card:hover .tilt-gold-shine { opacity: 1; }
+
+/* =============================================
+   3. FLOATING PARTICLES — 18 particles, 3 types
+   ============================================= */
+.particle { position: absolute; border-radius: 50%; pointer-events: none; }
+.particle--gold { background: rgba(212,175,55,0.5); box-shadow: 0 0 8px rgba(212,175,55,0.3); }
+.particle--emerald { background: rgba(31,138,112,0.5); box-shadow: 0 0 8px rgba(31,138,112,0.3); }
+.particle--diamond { background: rgba(15,61,62,0.4); box-shadow: 0 0 6px rgba(15,61,62,0.2); }
+
+@keyframes float-particle {
+  0%, 100% { transform: translateY(0) translateX(0) scale(1); opacity: 0; }
+  10% { opacity: 1; }
+  50% { transform: translateY(-80px) translateX(30px) scale(1.2); }
+  90% { opacity: 1; }
+}
+@keyframes float-particle-reverse {
+  0%, 100% { transform: translateY(0) translateX(0) scale(1); opacity: 0; }
+  10% { opacity: 1; }
+  50% { transform: translateY(-60px) translateX(-25px) scale(0.8); }
+  90% { opacity: 1; }
+}
+@keyframes float-particle-drift {
+  0%, 100% { transform: translateY(0) translateX(0) rotate(0deg); opacity: 0; }
+  15% { opacity: 0.8; }
+  50% { transform: translateY(-100px) translateX(40px) rotate(180deg); }
+  85% { opacity: 0.8; }
+}
+
+/* =============================================
+   4. KEYFRAME ANIMATIONS — 12+ @keyframes
+   ============================================= */
+
+/* Core motion */
+@keyframes float-slow { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-12px); } }
+@keyframes float-medium { 0%, 100% { transform: translateY(0px) rotate(0deg); } 50% { transform: translateY(-20px) rotate(2deg); } }
+@keyframes float-fast { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-8px); } }
+
+/* Rotation */
+@keyframes rotate-cw { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes rotate-ccw { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
+
+/* Blob morphing */
+@keyframes blob-morph {
+  0%, 100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; transform: rotate(0deg) scale(1); }
+  25% { border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%; }
+  50% { border-radius: 50% 60% 30% 60% / 30% 50% 70% 60%; transform: rotate(180deg) scale(1.05); }
+  75% { border-radius: 60% 30% 60% 40% / 70% 40% 50% 60%; }
+}
+
+/* Shimmer loading */
+@keyframes shimmer { to { background-position: -200% 0; } }
+.shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Gold shimmer */
+@keyframes gold-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.gold-shimmer {
+  background: linear-gradient(90deg, transparent 0%, rgba(212,175,55,0.15) 25%, rgba(212,175,55,0.4) 50%, rgba(212,175,55,0.15) 75%, transparent 100%);
+  background-size: 200% 100%;
+  animation: gold-shimmer 3s ease-in-out infinite;
+}
+
+/* Orb drift */
+@keyframes orb-drift {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.5; }
+  25% { transform: translate(30px, -20px) scale(1.1); opacity: 0.7; }
+  50% { transform: translate(-20px, -40px) scale(1.05); opacity: 0.6; }
+  75% { transform: translate(15px, -10px) scale(0.95); opacity: 0.8; }
+}
+
+/* Ring pulse */
+@keyframes ring-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.3; }
+  50% { transform: scale(1.08); opacity: 0.6; }
+}
+
+/* Glow pulse */
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(212,175,55,0.2), 0 0 40px rgba(212,175,55,0.1); }
+  50% { box-shadow: 0 0 30px rgba(212,175,55,0.4), 0 0 60px rgba(212,175,55,0.2); }
+}
+
+/* Scan line */
+@keyframes scan-line {
+  0% { top: -2px; opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+/* Marquee */
+@keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+.animate-marquee { animation: marquee 35s linear infinite; }
+.mask-edge { -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent); }
+
+/* Waveform */
+@keyframes waveform-bar {
+  0%, 100% { transform: scaleY(0.3); }
+  50% { transform: scaleY(1); }
+}
+
+/* Gradient shift */
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Scale breathe */
+@keyframes breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+/* Orbit pop for message pills */
+@keyframes orbit-pop {
+    0%, 100% { opacity: 0; transform: scale(0.7) translateZ(-100px) rotateX(15deg); filter: blur(8px); }
+    15%, 85% { opacity: 1; transform: scale(1) translateZ(80px) rotateX(0deg); filter: blur(0px); }
+    50% { transform: scale(1.05) translateZ(120px) rotateX(-5deg); }
+}
+
+/* =============================================
+   5. SHADOW DEPTH SYSTEM — 3 Tiers
+   ============================================= */
+.depth-shadow-sm { box-shadow: var(--shadow-sm); }
+.depth-shadow-md { box-shadow: var(--shadow-md); }
+.depth-shadow-lg { box-shadow: var(--shadow-lg); }
+.depth-shadow-xl { box-shadow: var(--shadow-xl); }
+
+/* Hover elevation */
+.hover-lift {
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.35s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-xl);
+}
+
+/* =============================================
+   6. PREMIUM CARDS — Hover lift, glow, border
+   ============================================= */
+.premium-card {
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(0,0,0,0.07);
+  border-radius: 20px;
+  box-shadow: var(--shadow-md);
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.4s ease,
+              border-color 0.4s ease;
+  position: relative;
+  overflow: hidden;
+}
+.premium-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(212,175,55,0.06), transparent 40%);
+  opacity: 0;
+  transition: opacity 0.4s;
+  pointer-events: none;
+  z-index: 0;
+  border-radius: inherit;
+}
+.premium-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: rgba(212,175,55,0.25);
+}
+.premium-card:hover::before { opacity: 1; }
+.premium-card > * { position: relative; z-index: 1; }
+
+/* Stat card */
+.stat-card {
+  border-radius: 20px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+/* =============================================
+   7. DECORATIVE ELEMENTS
+   ============================================= */
+
+/* Ornament line with gold gradient ends */
+.ornament-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ornament-line::before, .ornament-line::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(212,175,55,0.2), transparent);
+}
+
+/* Rotating decorative ring */
+.rotating-ring {
+  border: 1px solid rgba(212,175,55,0.15);
+  border-radius: 50%;
+  animation: rotate-cw 20s linear infinite;
+}
+.rotating-ring-reverse {
+  border: 1px solid rgba(31,138,112,0.12);
+  border-radius: 50%;
+  animation: rotate-ccw 25s linear infinite;
+}
+
+/* Ambient orb backgrounds */
+.ambient-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  pointer-events: none;
+  animation: orb-drift 8s ease-in-out infinite;
+}
+.ambient-orb--gold {
+  background: rgba(212,175,55,0.25);
+}
+.ambient-orb--emerald {
+  background: rgba(31,138,112,0.2);
+}
+.ambient-orb--moss {
+  background: rgba(15,61,62,0.15);
+}
+
+/* Crown badge (for premium indicators) */
+.crown-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05));
+  border: 1px solid rgba(212,175,55,0.3);
+  color: var(--gold);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+}
+.crown-badge::before {
+  content: '👑';
+  font-size: 12px;
+}
+
+/* Blob decorative shape */
+.blob {
+  border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+  animation: blob-morph 10s ease-in-out infinite;
+  pointer-events: none;
+}
+.blob--gold {
+  background: linear-gradient(135deg, rgba(212,175,55,0.3), rgba(232,200,74,0.15));
+}
+.blob--emerald {
+  background: linear-gradient(135deg, rgba(31,138,112,0.25), rgba(40,184,147,0.1));
+}
+
+/* =============================================
+   8. MICRO-INTERACTIONS
+   ============================================= */
+
+/* Sidebar slide on hover */
+.sidebar-slide {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.3s;
+}
+.sidebar-slide:hover {
+  transform: translateX(4px);
+}
+
+/* Activity row hover */
+.activity-row {
+  transition: background 0.2s, border-left-color 0.2s;
+  border-left: 3px solid transparent;
+}
+.activity-row:hover {
+  background: rgba(31,138,112,0.03);
+  border-left-color: var(--emerald-teal);
+}
+
+/* Hover underline effect */
+.hover-underline {
+  position: relative;
+}
+.hover-underline::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: var(--gold);
+  transition: width 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.hover-underline:hover::after {
+  width: 100%;
+}
+
+/* Radial glow on hover */
+.radial-glow {
+  position: relative;
+}
+.radial-glow::before {
+  content: '';
+  position: absolute;
+  inset: -20px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(212,175,55,0.12), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.4s;
+  pointer-events: none;
+  z-index: -1;
+}
+.radial-glow:hover::before {
+  opacity: 1;
+}
+
+/* Button press effect */
+.press-effect {
+  transition: transform 0.1s ease;
+}
+.press-effect:active {
+  transform: scale(0.97);
+}
+
+/* Focus ring */
+.focus-ring:focus-visible {
+  outline: 2px solid var(--emerald-teal);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* =============================================
+   9. COIL RINGS (Hero Orbital)
+   ============================================= */
 .coil-ring { position: absolute; border: 1px solid rgba(15,61,62,0.15); border-radius: 50%; }
 .coil-wire { position: absolute; border: 2px solid rgba(212,175,55,0.3); border-radius: 50%; }
 
-/* Reveal animations */
+/* =============================================
+   10. REVEAL ANIMATIONS
+   ============================================= */
 .reveal-text span { display: inline-block; transform: translateY(100%); opacity: 0; transition: transform 0.8s cubic-bezier(0.16,1,0.3,1), opacity 0.8s; }
 .reveal-text.active span { transform: translateY(0); opacity: 1; }
 .reveal-3d { 
@@ -165,12 +529,32 @@ html, body {
 }
 .reveal-3d.active { opacity: 1; transform: translateY(0) translateZ(0) rotateX(0deg); }
 
-/* Orbit-pop animation for message pills */
-@keyframes orbit-pop {
-    0%, 100% { opacity: 0; transform: scale(0.7) translateZ(-100px) rotateX(15deg); filter: blur(8px); }
-    15%, 85% { opacity: 1; transform: scale(1) translateZ(80px) rotateX(0deg); filter: blur(0px); }
-    50% { transform: scale(1.05) translateZ(120px) rotateX(-5deg); }
+/* Reveal slide left/right */
+.reveal-slide-left {
+  opacity: 0;
+  transform: translateX(-80px);
+  transition: opacity 0.8s ease-out, transform 1s cubic-bezier(0.16, 1, 0.3, 1);
 }
+.reveal-slide-left.active { opacity: 1; transform: translateX(0); }
+
+.reveal-slide-right {
+  opacity: 0;
+  transform: translateX(80px);
+  transition: opacity 0.8s ease-out, transform 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.reveal-slide-right.active { opacity: 1; transform: translateX(0); }
+
+/* Reveal scale */
+.reveal-scale {
+  opacity: 0;
+  transform: scale(0.85);
+  transition: opacity 0.7s ease-out, transform 0.9s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.reveal-scale.active { opacity: 1; transform: scale(1); }
+
+/* =============================================
+   11. MESSAGE PILLS
+   ============================================= */
 .message-pill {
   position: absolute;
   background: rgba(255,255,255,0.85);
@@ -188,12 +572,22 @@ html, body {
   z-index: 50;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar { width: 4px; }
+/* =============================================
+   12. CUSTOM SCROLLBAR — Emerald-tinted
+   ============================================= */
+::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(31,138,112,0.4); border-radius: 10px; }
+::-webkit-scrollbar-thumb { 
+  background: linear-gradient(180deg, rgba(31,138,112,0.5), rgba(212,175,55,0.3));
+  border-radius: 10px; 
+}
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(31,138,112,0.7), rgba(212,175,55,0.5));
+}
 
-/* --- Precision Cursor --- */
+/* =============================================
+   13. PRECISION CURSOR
+   ============================================= */
 .magnetic-btn { cursor: none; }
 #cursor {
     position: fixed; top: 0; left: 0; width: 6px; height: 6px;
@@ -211,7 +605,17 @@ html, body {
 }
 body:hover #cursor-follower { border-color: rgba(212, 175, 55, 1); width: 48px; height: 48px; }
 
-/* --- Mockup Console Animations --- */
+/* Cursor hover states for interactive elements */
+.magnetic-btn:hover ~ #cursor,
+a:hover ~ #cursor,
+button:hover ~ #cursor { 
+  width: 12px; height: 12px; 
+  background: var(--emerald-teal);
+}
+
+/* =============================================
+   14. MOCKUP CONSOLE ANIMATIONS
+   ============================================= */
 @keyframes slideUpFade { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 .mockup-child { opacity: 0; }
 .reveal-3d.active .mockup-child-1 { animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards; }
@@ -220,7 +624,26 @@ body:hover #cursor-follower { border-color: rgba(212, 175, 55, 1); width: 48px; 
 .reveal-3d.active .mockup-child-4 { animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards; }
 .mockup-float { animation: float-slow 6s ease-in-out infinite; }
 
-/* --- Terminal Typing Effect --- */
+/* Scan card effect */
+.scan-card {
+  position: relative;
+  overflow: hidden;
+}
+.scan-card::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--emerald-teal), transparent);
+  top: -2px;
+  opacity: 0;
+  animation: scan-line 4s ease-in-out infinite;
+  animation-delay: inherit;
+}
+
+/* =============================================
+   15. TERMINAL TYPING EFFECT
+   ============================================= */
 .type-1 { width: 0; overflow: hidden; white-space: nowrap; border-right: 2px solid transparent; display: inline-block; vertical-align: bottom; }
 .reveal-3d.active .type-1 { animation: typing-1 0.4s steps(10, end) 0.6s forwards, blink-cursor 0.75s step-end infinite; }
 @keyframes typing-1 { from { width: 0; } to { width: 11ch; } }
@@ -234,15 +657,18 @@ body:hover #cursor-follower { border-color: rgba(212, 175, 55, 1); width: 48px; 
 .reveal-3d.active .fade-in-delay-2 { animation: fade-in-text 0.3s ease-out 1.8s forwards; }
 @keyframes fade-in-text { to { opacity: 1; } }
 
-/* Magnetic Button */
+/* =============================================
+   16. MAGNETIC BUTTON + PERSPECTIVE
+   ============================================= */
 .magnetic-btn { display: inline-flex; justify-content: center; align-items: center; will-change: transform; cursor: none; }
 .magnetic-btn-inner { pointer-events: none; transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
 
-/* Perspective container */
 .perspective-container { perspective: 1200px; transform-style: preserve-3d; }
 .parallax-layer { transition: transform 0.1s linear; will-change: transform; }
 
-/* ===== FEATURE FLIP CARDS ===== */
+/* =============================================
+   17. FEATURE FLIP CARDS
+   ============================================= */
 .flip-card-scene {
   perspective: 900px;
   height: 340px;
@@ -305,6 +731,10 @@ body:hover #cursor-follower { border-color: rgba(212, 175, 55, 1); width: 48px; 
   margin-bottom: 20px;
   position: relative;
   flex-shrink: 0;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.flip-card-scene:hover .feature-icon-box {
+  transform: scale(1.1) rotate(-5deg);
 }
 .feature-icon-box::after {
   content: '';
@@ -354,4 +784,116 @@ body:hover #cursor-follower { border-color: rgba(212, 175, 55, 1); width: 48px; 
   border-radius: 50%;
   margin-top: 6px;
   flex-shrink: 0;
+}
+
+/* =============================================
+   18. WAVEFORM BARS
+   ============================================= */
+.waveform-bar {
+  display: inline-block;
+  width: 3px;
+  background: var(--emerald-teal);
+  border-radius: 2px;
+  animation: waveform-bar 1.2s ease-in-out infinite;
+  transform-origin: bottom;
+}
+.waveform-bar:nth-child(2) { animation-delay: 0.1s; height: 60%; }
+.waveform-bar:nth-child(3) { animation-delay: 0.2s; height: 80%; }
+.waveform-bar:nth-child(4) { animation-delay: 0.3s; height: 40%; }
+.waveform-bar:nth-child(5) { animation-delay: 0.4s; height: 90%; }
+
+/* =============================================
+   19. GRADIENT TEXT
+   ============================================= */
+.gradient-text-gold {
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 50%, var(--gold-dark) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.gradient-text-emerald {
+  background: linear-gradient(135deg, var(--emerald-teal) 0%, var(--emerald-light) 50%, var(--deep-moss) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.gradient-text-animated {
+  background: linear-gradient(135deg, var(--gold), var(--emerald-teal), var(--gold));
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-shift 4s ease infinite;
+}
+
+/* =============================================
+   20. UTILITY EFFECTS
+   ============================================= */
+
+/* Frosted noise overlay */
+.noise-overlay {
+  position: relative;
+}
+.noise-overlay::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.03;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  z-index: 1;
+  border-radius: inherit;
+}
+
+/* Gold border glow */
+.border-glow-gold {
+  position: relative;
+}
+.border-glow-gold::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(212,175,55,0.5), transparent, rgba(212,175,55,0.5));
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.border-glow-gold:hover::before { opacity: 1; }
+
+/* Emerald border glow */
+.border-glow-emerald::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(31,138,112,0.4), transparent, rgba(31,138,112,0.4));
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.border-glow-emerald:hover::before { opacity: 1; }
+
+/* Animated gradient border */
+.animated-border {
+  position: relative;
+  z-index: 0;
+}
+.animated-border::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: conic-gradient(from 0deg, var(--gold), var(--emerald-teal), var(--deep-moss), var(--gold));
+  z-index: -1;
+  animation: rotate-cw 6s linear infinite;
+}
+.animated-border::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: inherit;
+  z-index: -1;
 }

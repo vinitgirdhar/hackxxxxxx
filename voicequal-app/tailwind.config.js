@@ -8,7 +8,11 @@ export default {
         emerald: { 400: '#39AC83', 500: '#1F8A70', 600: '#166350' },
         amber: { 400: '#D4AF37', 500: '#A67C2E', 600: '#8a6523' },
       },
-      fontFamily: { sans: ['Inter', 'sans-serif'] },
+      fontFamily: {
+        sans: ['Outfit', 'Inter', 'sans-serif'],
+        serif: ['"Playfair Display"', 'serif'],
+        mono: ['"Fira Code"', 'monospace'],
+      },
     },
   },
   plugins: [],
