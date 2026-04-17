@@ -9,6 +9,7 @@ import { useRef, useState, useCallback, useEffect } from "react";
 import { useLocation } from "wouter";
 import DashboardLayout from "../components/DashboardLayout";
 import { triggerCall } from "../api/triggerCall";
+import { MOCK_CALLS } from "../lib/mockCalls";
 
 // ElevenLabs API key
 const ELEVENLABS_API_KEY = "f86cd3c5c5c32a9b951409b35041b6bb83e73a5b7e711db8f783babbeb94f103";
@@ -406,41 +407,61 @@ export default function Dashboard() {
   const [phoneNum, setPhoneNum] = useState('+919999999999');
 
   useEffect(() => {
+    // Seed from mock data immediately
+    const mockRows: LiveLead[] = MOCK_CALLS.map(c => ({
+      id: c.id,
+      name: c.lead,
+      company: '',
+      score: c.score?.total ?? null,
+      bucket: c.score?.label ?? null,
+      status: c.status,
+      recording: undefined,
+    }));
+
+    const applyRows = (real: LiveLead[]) => {
+      const all = [...real, ...mockRows];
+      const done = all.filter(r => r.status === 'COMPLETED').length;
+      const hot  = all.filter(r => r.bucket === 'HOT').length;
+      const warm = all.filter(r => r.bucket === 'WARM').length;
+      const cold = all.filter(r => r.bucket === 'COLD').length;
+      const scored = all.filter(r => r.score != null);
+      const topScore = scored.length ? Math.max(...scored.map(r => r.score!)) : 0;
+      setLiveLeads(all);
+      setOverview({
+        totalLeads: all.length,
+        callsInitiated: done,
+        hotLeads: hot,
+        warmLeads: warm,
+        coldLeads: cold,
+        conversionRate: all.length ? (hot / all.length) * 100 : 0,
+        topScore,
+      });
+    };
+
+    // Show mock data right away
+    applyRows([]);
+    setLoading(false);
+
+    // Then fetch real data and prepend it
     (async () => {
       try {
         const res = await fetch("https://api.elevenlabs.io/v1/convai/conversations?limit=50", {
           headers: { "xi-api-key": ELEVENLABS_API_KEY },
         });
-        if (!res.ok) throw new Error(`ElevenLabs ${res.status}`);
+        if (!res.ok) return;
         const data = await res.json();
         const convs: any[] = data.conversations ?? [];
-        if (convs.length === 0) { setLoading(false); return; }
-
-        const rows: LiveLead[] = convs.map((c: any) => {
-          const s = mapDbStatus(c.status ?? 'pending');
-          return {
-            id: c.conversation_id,
-            name: c.call_summary_title || 'Unknown Call',
-            company: '', score: null, bucket: null, status: s,
-            recording: `https://api.elevenlabs.io/v1/convai/conversations/${c.conversation_id}/audio`,
-          };
-        });
-
-        setLiveLeads(rows);
-        const done = rows.filter(r => r.status === 'COMPLETED').length;
-        const calling = rows.filter(r => r.status === 'CALLING').length;
-        setOverview({
-          totalLeads: rows.length,
-          callsInitiated: done + calling,
-          hotLeads: 0, warmLeads: 0, coldLeads: 0,
-          conversionRate: rows.length ? ((done) / rows.length) * 100 : 0,
-          topScore: 0,
-        });
-      } catch (err) {
-        console.warn('ElevenLabs fetch skipped:', err);
-      } finally {
-        setLoading(false);
-      }
+        const realRows: LiveLead[] = convs.map((c: any) => ({
+          id: c.conversation_id,
+          name: c.call_summary_title || 'Unknown Call',
+          company: '',
+          score: null,
+          bucket: null,
+          status: mapDbStatus(c.status ?? 'pending'),
+          recording: `https://api.elevenlabs.io/v1/convai/conversations/${c.conversation_id}/audio`,
+        }));
+        applyRows(realRows);
+      } catch { /* silent — mock data already shown */ }
     })();
   }, []);
 
