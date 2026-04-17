@@ -1,12 +1,10 @@
 import { motion } from "framer-motion";
 import {
-  Users, PhoneCall, ArrowRight, ArrowUpRight, Flame, Target, Clock,
-  BarChart3, Gem, Mic, Plus, Send, RefreshCw, Zap, Sparkles,
-  LayoutDashboard, UserCheck, Settings, HelpCircle, LogOut,
-  ChevronRight, Activity,
+  Users, PhoneCall, ArrowRight, ArrowUpRight, Flame, Target,
+  BarChart3, Gem, Mic, Plus, Send, RefreshCw, Zap, Sparkles, Clock,
 } from "lucide-react";
-import { useLocation } from "wouter";
 import { useRef, useState, useCallback, useEffect } from "react";
+import DashboardLayout from "../components/DashboardLayout";
 
 // ─── Fade-up animation helper ─────────────────────────────────────
 const fadeUp = (delay = 0) => ({
@@ -67,101 +65,6 @@ const cards = [
   { key: "hotLeads",       label: "Hot Leads",   icon: Flame,     color: "#1F8A70", bg: "linear-gradient(135deg,rgba(31,138,112,0.06),rgba(31,138,112,0.01))",   border: "rgba(31,138,112,0.15)", iconBg: "rgba(31,138,112,0.07)", trend: "+24%",    sparkData: [8,12,10,16,14,20,22,18,26,30]  },
   { key: "conversionRate", label: "Conversion",  icon: Target,    color: "#A67C2E", bg: "linear-gradient(135deg,rgba(166,124,46,0.06),rgba(166,124,46,0.01))",   border: "rgba(166,124,46,0.15)", iconBg: "rgba(166,124,46,0.07)", trend: "+3.2 pts",sparkData: [28,30,29,32,31,34,33,35,34,36] },
 ];
-
-// ─── Sidebar nav items ────────────────────────────────────────────
-const navItems = [
-  { icon: LayoutDashboard, label: "Dashboard",   active: true  },
-  { icon: UserCheck,        label: "Leads",       active: false },
-  { icon: PhoneCall,        label: "Calls",       active: false },
-  { icon: BarChart3,        label: "Analytics",   active: false },
-  { icon: Activity,         label: "Pipeline",    active: false },
-  { icon: Settings,         label: "Settings",    active: false },
-];
-
-// ─── Sidebar ──────────────────────────────────────────────────────
-function Sidebar({ onNavigateHome }: { onNavigateHome: () => void }) {
-  const [active, setActive] = useState("Dashboard");
-
-  return (
-    <aside
-      className="fixed left-0 top-0 h-full z-40 flex flex-col"
-      style={{
-        width: 240,
-        background: "rgba(255,255,255,0.92)",
-        backdropFilter: "blur(20px)",
-        borderRight: "1px solid rgba(0,0,0,0.07)",
-        boxShadow: "4px 0 24px rgba(0,0,0,0.04)",
-      }}
-    >
-      {/* Logo */}
-      <button
-        onClick={onNavigateHome}
-        className="flex items-center gap-2.5 px-6 py-5 border-b hover:opacity-80 transition-opacity text-left"
-        style={{ borderColor: "rgba(0,0,0,0.06)" }}
-      >
-        <div
-          className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-sm font-black"
-          style={{ background: "linear-gradient(135deg,#1F8A70,#0F3D3E)" }}
-        >
-          V
-        </div>
-        <span className="text-base font-black text-zinc-950 tracking-tight uppercase">
-          Voice<span style={{ color: "#1F8A70" }}>Qual</span>
-        </span>
-      </button>
-
-      {/* Nav links */}
-      <nav className="flex-1 px-3 py-5 space-y-1 overflow-y-auto">
-        <div className="text-[10px] font-black uppercase tracking-widest px-3 mb-3" style={{ color: "rgba(0,0,0,0.3)" }}>
-          Main Menu
-        </div>
-        {navItems.map(({ icon: Icon, label }) => {
-          const isActive = active === label;
-          return (
-            <button
-              key={label}
-              onClick={() => setActive(label)}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all group"
-              style={{
-                background: isActive ? "rgba(31,138,112,0.08)" : "transparent",
-                color: isActive ? "#1F8A70" : "#71717a",
-                border: isActive ? "1px solid rgba(31,138,112,0.15)" : "1px solid transparent",
-              }}
-            >
-              <Icon className="w-4 h-4 shrink-0" />
-              <span className="flex-1 text-left">{label}</span>
-              {isActive && <ChevronRight className="w-3.5 h-3.5 opacity-60" />}
-            </button>
-          );
-        })}
-
-        <div className="text-[10px] font-black uppercase tracking-widest px-3 mt-6 mb-3" style={{ color: "rgba(0,0,0,0.3)" }}>
-          Support
-        </div>
-        <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-zinc-500 hover:text-zinc-800 hover:bg-zinc-50 transition-all">
-          <HelpCircle className="w-4 h-4 shrink-0" /> Help & Docs
-        </button>
-      </nav>
-
-      {/* User profile */}
-      <div className="px-3 py-4 border-t" style={{ borderColor: "rgba(0,0,0,0.06)" }}>
-        <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-zinc-50 cursor-pointer group">
-          <div
-            className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
-            style={{ background: "linear-gradient(135deg,#D4AF37,#A67C2E)" }}
-          >
-            VQ
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-xs font-bold text-zinc-800 truncate">Admin User</div>
-            <div className="text-[10px] text-zinc-400 truncate">admin@voicequal.ai</div>
-          </div>
-          <LogOut className="w-3.5 h-3.5 text-zinc-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-        </div>
-      </div>
-    </aside>
-  );
-}
 
 // ─── Animated counter ─────────────────────────────────────────────
 function AnimatedValue({ value, suffix = "" }: { value: number | string | undefined; suffix?: string }) {
@@ -373,46 +276,9 @@ function QuickActions() {
 
 // ─── Main Dashboard ───────────────────────────────────────────────
 export default function Dashboard() {
-  const [, navigate] = useLocation();
-
   return (
-    <div className="flex min-h-screen" style={{ background: "linear-gradient(135deg,#f8fafc 0%,#f1f5f9 100%)" }}>
-      {/* Sidebar */}
-      <Sidebar onNavigateHome={() => navigate('/')} />
-
-      {/* Main content — offset by sidebar width */}
-      <div className="flex-1 flex flex-col" style={{ marginLeft: 240 }}>
-
-        {/* Topbar */}
-        <header
-          className="sticky top-0 z-30 flex items-center justify-between px-8 h-14"
-          style={{
-            background: "rgba(255,255,255,0.85)",
-            backdropFilter: "blur(12px)",
-            borderBottom: "1px solid rgba(0,0,0,0.06)",
-          }}
-        >
-          <div>
-            <span className="text-sm font-bold" style={{ color: "#09090b" }}>Dashboard</span>
-            <span className="mx-2 text-zinc-300">/</span>
-            <span className="text-sm" style={{ color: "#71717a" }}>Overview</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 text-xs px-3 py-2 rounded-xl bg-white border depth-shadow-sm" style={{ color: "#71717a", borderColor: "rgba(0,0,0,0.07)" }}>
-              <Clock className="w-3.5 h-3.5" />
-              {new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-            </div>
-            <div className="flex items-center gap-2 text-xs px-3 py-2 rounded-xl bg-white border depth-shadow-sm" style={{ color: "#71717a", borderColor: "rgba(0,0,0,0.07)" }}>
-              <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: "#1F8A70" }} />
-              Live
-            </div>
-          </div>
-        </header>
-
-        {/* Page body */}
-        <main className="flex-1 px-8 py-8 space-y-6 overflow-y-auto">
-
-          {/* Page title */}
+    <DashboardLayout>
+      <div className="space-y-6">
           <motion.div {...fadeUp(0)}>
             <h1 className="text-2xl font-bold tracking-tight" style={{ color: "#09090b" }}>Good morning 👋</h1>
             <p className="text-sm mt-1" style={{ color: "#71717a" }}>Real-time lead qualification performance.</p>
@@ -578,8 +444,7 @@ export default function Dashboard() {
 
             </div>
           </div>
-        </main>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }
