@@ -33,18 +33,31 @@ function formatTime(iso?: string): string {
   return new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
 }
 
+function mapStatus(s: string): string {
+  if (s === 'done') return 'COMPLETED';
+  if (s === 'in_progress' || s === 'calling') return 'CALLING';
+  if (s === 'failed' || s === 'error') return 'FAILED';
+  return s.toUpperCase();
+}
+
+function mapOutcome(score?: number): string | null {
+  if (score == null) return null;
+  if (score >= 7) return 'HOT';
+  if (score >= 4) return 'WARM';
+  return 'COLD';
+}
+
 function mapDbToCall(r: CallResult) {
+  const outcome = r.outcome ?? mapOutcome(r.score);
   return {
-    id: r.id,
-    lead: r.lead_name,
+    id: r.call_id,
+    lead: r.lead_name ?? r.call_id.slice(0, 16),
     company: r.company ?? '—',
-    duration: typeof (r as unknown as Record<string, unknown>).duration_seconds === 'number'
-      ? formatDuration((r as unknown as Record<string, number>).duration_seconds)
-      : (r.duration ?? '—'),
+    duration: '—',
     time: formatTime(r.called_at),
-    status: r.status,
+    status: mapStatus(r.status),
     score: r.score ?? null,
-    outcome: r.outcome ?? null,
+    outcome,
   };
 }
 
@@ -82,7 +95,7 @@ export default function Calls() {
     try {
       const { data, error } = await supabase
         .from('call_results')
-        .select('*')
+        .select('call_id, status, transcript, score, called_at, summary, recording_url, lead_name, phone, company, outcome')
         .order('called_at', { ascending: false })
         .limit(50);
 

@@ -5,16 +5,17 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
+// Matches actual n8n → Supabase columns
 export interface CallResult {
-  id: string
-  lead_name: string
-  phone: string
-  company?: string
-  duration?: string
-  called_at: string
-  status: 'COMPLETED' | 'CALLING' | 'FAILED' | 'PENDING'
-  score?: number
-  outcome?: 'HOT' | 'WARM' | 'COLD'
+  call_id: string
+  status: string        // "done" from n8n
   transcript?: string
+  score?: number
+  called_at: string
   summary?: string
+  recording_url?: string
+  lead_name?: string
+  phone?: string
+  company?: string
+  outcome?: string
 }
