@@ -50,18 +50,15 @@ function KpiCard({ kpi, delay }: { kpi: typeof kpis[0]; delay: number }) {
   return (
     <motion.div {...fadeUp(delay)}>
       <div ref={ref} className="tilt-card" onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}>
-        <div ref={innerRef} className="premium-card p-5 cursor-default" style={{ transition: 'transform 0.15s ease-out' }}>
+        <div ref={innerRef} className="premium-card px-4 py-3 cursor-default" style={{ transition: 'transform 0.15s ease-out' }}>
           <div className="tilt-shine rounded-[20px]" />
           <div className="tilt-gold-shine rounded-[20px]" />
-          {/* Background accent */}
-          <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full pointer-events-none"
-            style={{ background: kpi.color, opacity: 0.06, filter: "blur(16px)" }} />
 
-          <div className="text-[11px] font-bold uppercase tracking-widest mb-3 relative z-10" style={{ color: "#94a3b8" }}>{kpi.label}</div>
+          <div className="text-[11px] font-bold uppercase tracking-widest mb-2 relative z-10" style={{ color: "#94a3b8" }}>{kpi.label}</div>
           <div className="text-2xl font-black tracking-tight relative z-10" style={{ color: "#09090b", fontFamily: "'Outfit', sans-serif" }}>
             {kpi.value}<span className="text-base font-bold ml-0.5" style={{ color: "#94a3b8" }}>{kpi.unit}</span>
           </div>
-          <div className="flex items-center gap-1.5 mt-3 relative z-10">
+          <div className="flex items-center gap-1.5 mt-2 relative z-10">
             {kpi.up
               ? <TrendingUp className="w-3.5 h-3.5" style={{ color: "#1F8A70" }} />
               : <TrendingDown className="w-3.5 h-3.5" style={{ color: "#DC2626" }} />}
