@@ -5,6 +5,11 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
+// ElevenLabs recording URL is always derivable from call_id
+export function recordingUrl(callId: string, stored?: string | null): string {
+  return stored || `https://api.elevenlabs.io/v1/convai/conversations/${callId}/audio`
+}
+
 // Matches actual n8n → Supabase columns
 export interface CallResult {
   call_id: string

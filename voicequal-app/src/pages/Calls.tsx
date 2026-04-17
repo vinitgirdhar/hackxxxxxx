@@ -97,7 +97,7 @@ export default function Calls() {
     try {
       const { data, error } = await supabase
         .from('call_results')
-        .select('call_id, status, transcript, score, called_at, summary, recording_url, lead_name, phone, company, outcome')
+        .select('*')
         .order('called_at', { ascending: false })
         .limit(50);
 
