@@ -1,9 +1,12 @@
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
-import { ArrowLeft, PhoneCall, RefreshCw, CheckCircle2, XCircle, Clock, Globe, RotateCcw, Database, Zap } from "lucide-react";
+import { ArrowLeft, PhoneCall, RefreshCw, CheckCircle2, XCircle, Clock, Globe, RotateCcw, Database, Zap, Mic, FileText, Volume2 } from "lucide-react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "../components/DashboardLayout";
+import { supabase } from "../lib/supabase";
+import { triggerCall } from "../api/triggerCall";
 
-// ─── Full lead data store ────────────────────────────────────────────────
+// ─── Mock lead store for demo IDs 1-10 ──────────────────────────────────────
 const leadStore: Record<string, {
   id: string; name: string; phone: string; email: string;
   company: string; score: number | null; bucket: string | null;
@@ -11,131 +14,50 @@ const leadStore: Record<string, {
   bant: { budget: number; authority: number; need: number; timeline: number };
   calls: { status: string; duration: string; time: string; note?: string }[];
   meta: { language: string; retryCount: number; crmSync: string; syncTime: string };
+  transcript?: string; summary?: string; recording_url?: string;
 }> = {
-  '1': {
-    id: '1', name: 'Priya Menon', phone: '+91 98765 43210', email: 'priya@infosys.com',
-    company: 'Infosys', score: 9.1, bucket: 'HOT', status: 'COMPLETED',
-    date: '2026-04-17', source: 'Inbound',
-    bant: { budget: 2.8, authority: 2.9, need: 3.0, timeline: 2.7 },
-    calls: [
-      { status: 'COMPLETED', duration: '4m 32s', time: '10:14 AM', note: 'Confirmed Q3 budget. Decision-maker engaged.' },
-      { status: 'COMPLETED', duration: '1m 08s', time: '09:45 AM', note: 'Initial qualification call.' },
-    ],
-    meta: { language: 'en-IN', retryCount: 0, crmSync: 'PUSHED', syncTime: '4/17/2026, 10:16 AM' },
-  },
-  '2': {
-    id: '2', name: 'Arjun Sharma', phone: '+91 87654 32109', email: 'arjun@wipro.com',
-    company: 'Wipro', score: 8.5, bucket: 'HOT', status: 'COMPLETED',
-    date: '2026-04-17', source: 'Outbound',
-    bant: { budget: 2.6, authority: 2.8, need: 2.7, timeline: 2.5 },
-    calls: [
-      { status: 'COMPLETED', duration: '3m 51s', time: '11:30 AM', note: 'Strong buying intent. Requested pricing sheet.' },
-      { status: 'FAILED', duration: '—', time: '10:55 AM', note: 'No answer.' },
-    ],
-    meta: { language: 'en-IN', retryCount: 1, crmSync: 'PUSHED', syncTime: '4/17/2026, 11:33 AM' },
-  },
-  '3': {
-    id: '3', name: 'Neha Kapoor', phone: '+91 76543 21098', email: 'neha@tcs.com',
-    company: 'TCS', score: 6.2, bucket: 'WARM', status: 'COMPLETED',
-    date: '2026-04-16', source: 'Referral',
-    bant: { budget: 1.9, authority: 2.0, need: 2.2, timeline: 1.8 },
-    calls: [
-      { status: 'COMPLETED', duration: '2m 20s', time: '03:15 PM', note: 'Interested but needs internal approval.' },
-    ],
-    meta: { language: 'en-IN', retryCount: 0, crmSync: 'PUSHED', syncTime: '4/16/2026, 3:18 PM' },
-  },
-  '4': {
-    id: '4', name: 'Rohit Verma', phone: '+91 65432 10987', email: 'rohit@hcl.com',
-    company: 'HCL Tech', score: 4.8, bucket: 'WARM', status: 'CALLING',
-    date: '2026-04-16', source: 'Outbound',
-    bant: { budget: 1.5, authority: 1.6, need: 1.8, timeline: 1.4 },
-    calls: [
-      { status: 'CALLING', duration: '—', time: '04:00 PM', note: 'Active call in progress...' },
-      { status: 'FAILED', duration: '—', time: '02:30 PM', note: 'Voicemail left.' },
-    ],
-    meta: { language: 'hi-IN', retryCount: 2, crmSync: 'PENDING', syncTime: '—' },
-  },
-  '5': {
-    id: '5', name: 'Anjali Singh', phone: '+91 54321 09876', email: 'anjali@cognizant.com',
-    company: 'Cognizant', score: 2.1, bucket: 'COLD', status: 'COMPLETED',
-    date: '2026-04-15', source: 'Referral',
-    bant: { budget: 0.7, authority: 0.5, need: 0.9, timeline: 0.6 },
-    calls: [
-      { status: 'COMPLETED', duration: '1m 12s', time: '11:00 AM', note: 'No current need. Follow up in Q4.' },
-      { status: 'FAILED', duration: '—', time: '09:30 AM', note: 'No answer.' },
-    ],
-    meta: { language: 'en-IN', retryCount: 1, crmSync: 'PUSHED', syncTime: '4/15/2026, 11:04 AM' },
-  },
-  '6': {
-    id: '6', name: 'Vikram Nair', phone: '+91 43210 98765', email: 'vikram@techmahindra.com',
-    company: 'Tech Mahindra', score: null, bucket: null, status: 'PENDING',
-    date: '2026-04-15', source: 'Outbound',
-    bant: { budget: 0, authority: 0, need: 0, timeline: 0 },
-    calls: [],
-    meta: { language: 'en-IN', retryCount: 0, crmSync: 'NOT SYNCED', syncTime: '—' },
-  },
-  '7': {
-    id: '7', name: 'Kavya Reddy', phone: '+91 32109 87654', email: 'kavya@mphasis.com',
-    company: 'Mphasis', score: 7.3, bucket: 'HOT', status: 'COMPLETED',
-    date: '2026-04-15', source: 'Inbound',
-    bant: { budget: 2.2, authority: 2.4, need: 2.5, timeline: 2.1 },
-    calls: [
-      { status: 'COMPLETED', duration: '3m 07s', time: '02:45 PM', note: 'Ready to proceed. Sent to sales team.' },
-    ],
-    meta: { language: 'en-IN', retryCount: 0, crmSync: 'PUSHED', syncTime: '4/15/2026, 2:48 PM' },
-  },
-  '8': {
-    id: '8', name: 'Siddharth Rao', phone: '+91 21098 76543', email: 'sid@zensar.com',
-    company: 'Zensar', score: 5.5, bucket: 'WARM', status: 'COMPLETED',
-    date: '2026-04-14', source: 'Outbound',
-    bant: { budget: 1.7, authority: 1.8, need: 2.0, timeline: 1.5 },
-    calls: [
-      { status: 'COMPLETED', duration: '2m 55s', time: '05:10 PM', note: 'Interested. Budget approval pending.' },
-    ],
-    meta: { language: 'en-IN', retryCount: 0, crmSync: 'PUSHED', syncTime: '4/14/2026, 5:13 PM' },
-  },
-  '9': {
-    id: '9', name: 'Meera Iyer', phone: '+91 10987 65432', email: 'meera@lnt.com',
-    company: 'L&T Infotech', score: 8.9, bucket: 'HOT', status: 'COMPLETED',
-    date: '2026-04-14', source: 'Inbound',
-    bant: { budget: 2.7, authority: 2.9, need: 2.8, timeline: 2.6 },
-    calls: [
-      { status: 'COMPLETED', duration: '5m 14s', time: '01:00 PM', note: 'High intent. Budget confirmed. Closing next week.' },
-    ],
-    meta: { language: 'en-IN', retryCount: 0, crmSync: 'PUSHED', syncTime: '4/14/2026, 1:05 PM' },
-  },
-  '10': {
-    id: '10', name: 'Ravi Kumar', phone: '+91 99876 54321', email: 'ravi@persistent.com',
-    company: 'Persistent', score: 1.8, bucket: 'COLD', status: 'FAILED',
-    date: '2026-04-13', source: 'Outbound',
-    bant: { budget: 0.5, authority: 0.7, need: 0.6, timeline: 0.4 },
-    calls: [
-      { status: 'FAILED', duration: '—', time: '03:00 PM', note: 'Wrong number.' },
-      { status: 'FAILED', duration: '—', time: '11:00 AM', note: 'No answer.' },
-    ],
-    meta: { language: 'en-IN', retryCount: 2, crmSync: 'NOT SYNCED', syncTime: '—' },
-  },
+  '1': { id:'1', name:'Priya Menon', phone:'+91 98765 43210', email:'priya@infosys.com', company:'Infosys', score:9.1, bucket:'HOT', status:'COMPLETED', date:'2026-04-17', source:'Inbound', bant:{budget:2.8,authority:2.9,need:3.0,timeline:2.7}, calls:[{status:'COMPLETED',duration:'4m 32s',time:'10:14 AM',note:'Confirmed Q3 budget. Decision-maker engaged.'},{status:'COMPLETED',duration:'1m 08s',time:'09:45 AM',note:'Initial qualification call.'}], meta:{language:'en-IN',retryCount:0,crmSync:'PUSHED',syncTime:'4/17/2026, 10:16 AM'} },
+  '2': { id:'2', name:'Arjun Sharma', phone:'+91 87654 32109', email:'arjun@wipro.com', company:'Wipro', score:8.5, bucket:'HOT', status:'COMPLETED', date:'2026-04-17', source:'Outbound', bant:{budget:2.6,authority:2.8,need:2.7,timeline:2.5}, calls:[{status:'COMPLETED',duration:'3m 51s',time:'11:30 AM',note:'Strong buying intent. Requested pricing sheet.'},{status:'FAILED',duration:'—',time:'10:55 AM',note:'No answer.'}], meta:{language:'en-IN',retryCount:1,crmSync:'PUSHED',syncTime:'4/17/2026, 11:33 AM'} },
+  '3': { id:'3', name:'Neha Kapoor', phone:'+91 76543 21098', email:'neha@tcs.com', company:'TCS', score:6.2, bucket:'WARM', status:'COMPLETED', date:'2026-04-16', source:'Referral', bant:{budget:1.9,authority:2.0,need:2.2,timeline:1.8}, calls:[{status:'COMPLETED',duration:'2m 20s',time:'03:15 PM',note:'Interested but needs internal approval.'}], meta:{language:'en-IN',retryCount:0,crmSync:'PUSHED',syncTime:'4/16/2026, 3:18 PM'} },
+  '4': { id:'4', name:'Rohit Verma', phone:'+91 65432 10987', email:'rohit@hcl.com', company:'HCL Tech', score:4.8, bucket:'WARM', status:'CALLING', date:'2026-04-16', source:'Outbound', bant:{budget:1.5,authority:1.6,need:1.8,timeline:1.4}, calls:[{status:'CALLING',duration:'—',time:'04:00 PM',note:'Active call in progress...'},{status:'FAILED',duration:'—',time:'02:30 PM',note:'Voicemail left.'}], meta:{language:'hi-IN',retryCount:2,crmSync:'PENDING',syncTime:'—'} },
+  '5': { id:'5', name:'Anjali Singh', phone:'+91 54321 09876', email:'anjali@cognizant.com', company:'Cognizant', score:2.1, bucket:'COLD', status:'COMPLETED', date:'2026-04-15', source:'Referral', bant:{budget:0.7,authority:0.5,need:0.9,timeline:0.6}, calls:[{status:'COMPLETED',duration:'1m 12s',time:'11:00 AM',note:'No current need. Follow up in Q4.'},{status:'FAILED',duration:'—',time:'09:30 AM',note:'No answer.'}], meta:{language:'en-IN',retryCount:1,crmSync:'PUSHED',syncTime:'4/15/2026, 11:04 AM'} },
+  '6': { id:'6', name:'Vikram Nair', phone:'+91 43210 98765', email:'vikram@techmahindra.com', company:'Tech Mahindra', score:null, bucket:null, status:'PENDING', date:'2026-04-15', source:'Outbound', bant:{budget:0,authority:0,need:0,timeline:0}, calls:[], meta:{language:'en-IN',retryCount:0,crmSync:'NOT SYNCED',syncTime:'—'} },
+  '7': { id:'7', name:'Kavya Reddy', phone:'+91 32109 87654', email:'kavya@mphasis.com', company:'Mphasis', score:7.3, bucket:'HOT', status:'COMPLETED', date:'2026-04-15', source:'Inbound', bant:{budget:2.2,authority:2.4,need:2.5,timeline:2.1}, calls:[{status:'COMPLETED',duration:'3m 07s',time:'02:45 PM',note:'Ready to proceed. Sent to sales team.'}], meta:{language:'en-IN',retryCount:0,crmSync:'PUSHED',syncTime:'4/15/2026, 2:48 PM'} },
+  '8': { id:'8', name:'Siddharth Rao', phone:'+91 21098 76543', email:'sid@zensar.com', company:'Zensar', score:5.5, bucket:'WARM', status:'COMPLETED', date:'2026-04-14', source:'Outbound', bant:{budget:1.7,authority:1.8,need:2.0,timeline:1.5}, calls:[{status:'COMPLETED',duration:'2m 55s',time:'05:10 PM',note:'Interested. Budget approval pending.'}], meta:{language:'en-IN',retryCount:0,crmSync:'PUSHED',syncTime:'4/14/2026, 5:13 PM'} },
+  '9': { id:'9', name:'Meera Iyer', phone:'+91 10987 65432', email:'meera@lnt.com', company:'L&T Infotech', score:8.9, bucket:'HOT', status:'COMPLETED', date:'2026-04-14', source:'Inbound', bant:{budget:2.7,authority:2.9,need:2.8,timeline:2.6}, calls:[{status:'COMPLETED',duration:'5m 14s',time:'01:00 PM',note:'High intent. Budget confirmed. Closing next week.'}], meta:{language:'en-IN',retryCount:0,crmSync:'PUSHED',syncTime:'4/14/2026, 1:05 PM'} },
+  '10': { id:'10', name:'Ravi Kumar', phone:'+91 99876 54321', email:'ravi@persistent.com', company:'Persistent', score:1.8, bucket:'COLD', status:'FAILED', date:'2026-04-13', source:'Outbound', bant:{budget:0.5,authority:0.7,need:0.6,timeline:0.4}, calls:[{status:'FAILED',duration:'—',time:'03:00 PM',note:'Wrong number.'},{status:'FAILED',duration:'—',time:'11:00 AM',note:'No answer.'}], meta:{language:'en-IN',retryCount:2,crmSync:'NOT SYNCED',syncTime:'—'} },
 };
 
 // ─── Colours ──────────────────────────────────────────────────────────────
 const bucketStyle: Record<string, { bg: string; text: string; border: string }> = {
-  HOT:  { bg: 'rgba(31,138,112,0.1)',   text: '#1F8A70', border: 'rgba(31,138,112,0.3)'  },
-  WARM: { bg: 'rgba(212,175,55,0.1)',   text: '#A67C2E', border: 'rgba(212,175,55,0.3)'  },
-  COLD: { bg: 'rgba(100,116,139,0.08)', text: '#64748B', border: 'rgba(100,116,139,0.2)' },
+  HOT:  { bg:'rgba(31,138,112,0.1)',   text:'#1F8A70', border:'rgba(31,138,112,0.3)'  },
+  WARM: { bg:'rgba(212,175,55,0.1)',   text:'#A67C2E', border:'rgba(212,175,55,0.3)'  },
+  COLD: { bg:'rgba(100,116,139,0.08)', text:'#64748B', border:'rgba(100,116,139,0.2)' },
 };
-
 const callStatusStyle: Record<string, { bg: string; text: string }> = {
-  COMPLETED: { bg: 'rgba(31,138,112,0.1)',   text: '#1F8A70' },
-  CALLING:   { bg: 'rgba(212,175,55,0.1)',   text: '#A67C2E' },
-  FAILED:    { bg: 'rgba(239,68,68,0.1)',    text: '#DC2626' },
-  PENDING:   { bg: 'rgba(100,116,139,0.08)', text: '#64748B' },
+  COMPLETED: { bg:'rgba(31,138,112,0.1)',   text:'#1F8A70' },
+  CALLING:   { bg:'rgba(212,175,55,0.1)',   text:'#A67C2E' },
+  FAILED:    { bg:'rgba(239,68,68,0.1)',    text:'#DC2626' },
+  PENDING:   { bg:'rgba(100,116,139,0.08)', text:'#64748B' },
+};
+const crmSyncStyle: Record<string, { bg: string; text: string }> = {
+  PUSHED:       { bg:'rgba(31,138,112,0.1)',   text:'#1F8A70' },
+  PENDING:      { bg:'rgba(212,175,55,0.1)',   text:'#A67C2E' },
+  'NOT SYNCED': { bg:'rgba(100,116,139,0.08)', text:'#64748B' },
 };
 
-const crmSyncStyle: Record<string, { bg: string; text: string }> = {
-  PUSHED:      { bg: 'rgba(31,138,112,0.1)',   text: '#1F8A70' },
-  PENDING:     { bg: 'rgba(212,175,55,0.1)',   text: '#A67C2E' },
-  'NOT SYNCED':{ bg: 'rgba(100,116,139,0.08)', text: '#64748B' },
-};
+function outcomeFromScore(score: number | null): string | null {
+  if (score == null) return null;
+  if (score >= 7) return 'HOT';
+  if (score >= 4) return 'WARM';
+  return 'COLD';
+}
+function mapDbStatus(s: string): string {
+  if (s === 'done') return 'COMPLETED';
+  if (s === 'initiated' || s === 'in_progress') return 'CALLING';
+  if (s === 'failed') return 'FAILED';
+  return s.toUpperCase();
+}
 
 // ─── BANT Bar ────────────────────────────────────────────────────────────
 function BANTBar({ label, value, max = 3 }: { label: string; value: number; max?: number }) {
@@ -144,17 +66,13 @@ function BANTBar({ label, value, max = 3 }: { label: string; value: number; max?
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-bold" style={{ color: '#52525b' }}>{label}</span>
+        <span className="text-sm font-bold" style={{ color:'#52525b' }}>{label}</span>
         <span className="text-sm font-black tabular-nums" style={{ color }}>{value.toFixed(1)}/3</span>
       </div>
-      <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: `${color}18` }}>
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: `${pct}%` }}
-          transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
-          className="h-full rounded-full"
-          style={{ backgroundColor: color }}
-        />
+      <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor:`${color}18` }}>
+        <motion.div initial={{ width:0 }} animate={{ width:`${pct}%` }}
+          transition={{ duration:1.1, ease:[0.16,1,0.3,1], delay:0.2 }}
+          className="h-full rounded-full" style={{ backgroundColor:color }} />
       </div>
     </div>
   );
@@ -165,26 +83,110 @@ function CallRow({ call, i }: { call: { status: string; duration: string; time: 
   const s = callStatusStyle[call.status] ?? callStatusStyle.PENDING;
   const Icon = call.status === 'COMPLETED' ? CheckCircle2 : call.status === 'CALLING' ? PhoneCall : XCircle;
   return (
-    <motion.div
-      initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: 0.3 + i * 0.08, ease: [0.16, 1, 0.3, 1] }}
-      className="flex items-start gap-3 py-3"
-      style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}
-    >
-      <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{ backgroundColor: s.bg }}>
-        <Icon className="w-3.5 h-3.5" style={{ color: s.text }} />
+    <motion.div initial={{ opacity:0, x:12 }} animate={{ opacity:1, x:0 }}
+      transition={{ delay:0.3+i*0.08, ease:[0.16,1,0.3,1] }}
+      className="flex items-start gap-3 py-3" style={{ borderBottom:'1px solid rgba(0,0,0,0.05)' }}>
+      <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{ backgroundColor:s.bg }}>
+        <Icon className="w-3.5 h-3.5" style={{ color:s.text }} />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between mb-0.5">
           <span className="text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest"
-            style={{ backgroundColor: s.bg, color: s.text }}>{call.status}</span>
-          <div className="flex items-center gap-3 text-[10px] font-medium" style={{ color: '#94a3b8' }}>
+            style={{ backgroundColor:s.bg, color:s.text }}>{call.status}</span>
+          <div className="flex items-center gap-3 text-[10px] font-medium" style={{ color:'#94a3b8' }}>
             {call.duration !== '—' && <span>{call.duration}</span>}
             <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{call.time}</span>
           </div>
         </div>
-        {call.note && <p className="text-[11px] font-medium mt-1" style={{ color: '#71717a' }}>{call.note}</p>}
+        {call.note && <p className="text-[11px] font-medium mt-1" style={{ color:'#71717a' }}>{call.note}</p>}
       </div>
+    </motion.div>
+  );
+}
+
+// ─── Transcript Panel ─────────────────────────────────────────────────────
+function TranscriptPanel({ transcript, summary }: { transcript?: string; summary?: string }) {
+  const [expanded, setExpanded] = useState(false);
+  if (!transcript) return null;
+
+  const lines = transcript.split(/(?<=[.?!])\s+/).filter(Boolean);
+
+  return (
+    <motion.div initial={{ opacity:0, y:24 }} animate={{ opacity:1, y:0 }}
+      transition={{ duration:0.6, delay:0.3, ease:[0.16,1,0.3,1] }}
+      className="premium-card overflow-hidden">
+      <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom:'1px solid rgba(212,175,55,0.08)' }}>
+        <div className="flex items-center gap-3">
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor:'rgba(31,138,112,0.08)' }}>
+            <FileText className="w-3.5 h-3.5" style={{ color:'#1F8A70' }} />
+          </div>
+          <div>
+            <div className="font-black text-sm uppercase tracking-wide" style={{ color:'#09090b', fontFamily:"'Outfit', sans-serif" }}>Call Transcript</div>
+            <div className="text-[10px] font-medium mt-0.5" style={{ color:'#71717a' }}>{lines.length} utterances from AI call</div>
+          </div>
+        </div>
+        <button onClick={() => setExpanded(e => !e)}
+          className="text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-lg transition-all"
+          style={{ background:'rgba(31,138,112,0.06)', color:'#1F8A70', border:'1px solid rgba(31,138,112,0.12)' }}>
+          {expanded ? 'Collapse' : 'Expand'}
+        </button>
+      </div>
+
+      {summary && (
+        <div className="px-6 py-3 flex gap-3" style={{ borderBottom:'1px solid rgba(0,0,0,0.04)', background:'rgba(212,175,55,0.02)' }}>
+          <Zap className="w-4 h-4 shrink-0 mt-0.5" style={{ color:'#D4AF37' }} />
+          <p className="text-xs font-medium leading-relaxed" style={{ color:'#52525b' }}><span className="font-black" style={{ color:'#09090b' }}>Summary: </span>{summary}</p>
+        </div>
+      )}
+
+      <div className="px-6 py-4 space-y-3" style={{ maxHeight: expanded ? 'none' : '280px', overflow: expanded ? 'visible' : 'hidden' }}>
+        {lines.map((line, i) => (
+          <motion.div key={i} initial={{ opacity:0, x:-8 }} animate={{ opacity:1, x:0 }}
+            transition={{ delay: Math.min(0.05 * i, 0.4) }}
+            className="flex gap-3 items-start">
+            <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-[9px] font-black"
+              style={{ backgroundColor:'rgba(31,138,112,0.08)', color:'#1F8A70' }}>{i+1}</div>
+            <p className="text-sm leading-relaxed font-medium" style={{ color:'#3f3f46' }}>{line}</p>
+          </motion.div>
+        ))}
+      </div>
+
+      {!expanded && transcript.length > 300 && (
+        <div className="px-6 pb-4">
+          <button onClick={() => setExpanded(true)}
+            className="text-xs font-black text-emerald-600 hover:underline uppercase tracking-widest">
+            Show full transcript ↓
+          </button>
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+// ─── Audio Player ─────────────────────────────────────────────────────────
+function AudioPlayer({ url }: { url: string }) {
+  return (
+    <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }}
+      transition={{ duration:0.5, delay:0.35 }}
+      className="premium-card p-5">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ backgroundColor:'rgba(212,175,55,0.1)', border:'1px solid rgba(212,175,55,0.2)' }}>
+          <Volume2 className="w-4 h-4" style={{ color:'#D4AF37' }} />
+        </div>
+        <div>
+          <div className="font-black text-sm uppercase tracking-wide" style={{ color:'#09090b', fontFamily:"'Outfit', sans-serif" }}>Call Recording</div>
+          <div className="text-[10px] font-medium" style={{ color:'#71717a' }}>ElevenLabs Conversational AI</div>
+        </div>
+      </div>
+      <audio controls className="w-full rounded-xl" style={{ height:40 }}>
+        <source src={url} type="audio/mpeg" />
+        <source src={url} />
+      </audio>
+      <a href={url} target="_blank" rel="noopener noreferrer"
+        className="mt-2 text-[10px] font-black uppercase tracking-widest flex items-center gap-1 hover:underline"
+        style={{ color:'#1F8A70' }}>
+        <Mic className="w-3 h-3" /> Open in browser
+      </a>
     </motion.div>
   );
 }
@@ -192,13 +194,203 @@ function CallRow({ call, i }: { call: { status: string; duration: string; time: 
 // ─── Main Page ────────────────────────────────────────────────────────────
 export default function LeadDetail({ params }: { params: { id: string } }) {
   const [, navigate] = useLocation();
-  const lead = leadStore[params.id];
+  const isLiveId = params.id.startsWith('conv_');
 
+  // Live Supabase data
+  const [liveData, setLiveData] = useState<{
+    call_id: string; status: string; transcript?: string; score?: number;
+    called_at: string; summary?: string; recording_url?: string;
+    lead_name?: string; phone?: string; company?: string; outcome?: string;
+  } | null>(null);
+  const [liveLoading, setLiveLoading] = useState(isLiveId);
+  const [retrying, setRetrying] = useState(false);
+
+  useEffect(() => {
+    if (!isLiveId) return;
+    setLiveLoading(true);
+    supabase.from('call_results').select('*').eq('call_id', params.id).single()
+      .then(({ data }) => { setLiveData(data); setLiveLoading(false); });
+  }, [params.id, isLiveId]);
+
+  const handleRetry = async () => {
+    setRetrying(true);
+    try { await triggerCall(liveData?.phone, liveData?.lead_name); }
+    catch { /* ignore */ }
+    setTimeout(() => setRetrying(false), 2000);
+  };
+
+  // ── Live record view ─────────────────────────────────────────────────────
+  if (isLiveId) {
+    if (liveLoading) {
+      return (
+        <DashboardLayout>
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <motion.div animate={{ rotate:360 }} transition={{ duration:1, repeat:Infinity, ease:'linear' }}>
+              <RefreshCw className="w-6 h-6" style={{ color:'#D4AF37' }} />
+            </motion.div>
+          </div>
+        </DashboardLayout>
+      );
+    }
+    if (!liveData) {
+      return (
+        <DashboardLayout>
+          <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+            <div className="text-5xl font-black" style={{ color:'#D4AF37' }}>404</div>
+            <p className="text-zinc-500 font-medium">Call record not found.</p>
+            <button onClick={() => navigate('/calls')} className="text-sm font-black text-emerald-600 hover:underline uppercase tracking-widest">← Back to Calls</button>
+          </div>
+        </DashboardLayout>
+      );
+    }
+
+    const status = mapDbStatus(liveData.status);
+    const bucket = liveData.outcome ?? outcomeFromScore(liveData.score ?? null);
+    const bk = bucketStyle[bucket ?? ''] ?? bucketStyle.COLD;
+    const sk = callStatusStyle[status] ?? callStatusStyle.PENDING;
+    const calledAt = liveData.called_at ? new Date(liveData.called_at).toLocaleString('en-IN') : '—';
+    const displayName = liveData.lead_name ?? liveData.call_id;
+
+    return (
+      <DashboardLayout>
+        <div className="space-y-6 max-w-5xl">
+
+          <motion.button initial={{ opacity:0, x:-12 }} animate={{ opacity:1, x:0 }}
+            onClick={() => navigate('/calls')}
+            className="flex items-center gap-2 text-xs font-black uppercase tracking-widest hover:gap-3 transition-all"
+            style={{ color:'#71717a' }}>
+            <ArrowLeft className="w-3.5 h-3.5" /> Back to calls
+          </motion.button>
+
+          {/* Header */}
+          <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }}
+            transition={{ duration:0.55, ease:[0.16,1,0.3,1] }} className="premium-card p-6">
+            <div className="flex items-start justify-between flex-wrap gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-white text-lg font-black shrink-0"
+                  style={{ background:'linear-gradient(135deg,#0F3D3E,#1F8A70)', border:'2px solid rgba(212,175,55,0.3)', boxShadow:'0 4px 16px rgba(31,138,112,0.25)' }}>
+                  {displayName.slice(0, 2).toUpperCase()}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <h1 className="text-2xl font-black tracking-tight" style={{ color:'#09090b', fontFamily:"'Outfit', sans-serif" }}>{displayName}</h1>
+                    {bucket && (
+                      <span className="text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-widest"
+                        style={{ backgroundColor:bk.bg, color:bk.text, border:`1px solid ${bk.border}` }}>{bucket}</span>
+                    )}
+                    <span className="text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest"
+                      style={{ background:'rgba(31,138,112,0.08)', color:'#1F8A70', border:'1px solid rgba(31,138,112,0.18)' }}>
+                      Live · n8n
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs font-medium flex-wrap" style={{ color:'#71717a' }}>
+                    {liveData.phone && <span className="font-mono">{liveData.phone}</span>}
+                    {liveData.phone && <span style={{ color:'rgba(0,0,0,0.2)' }}>·</span>}
+                    <span className="font-mono text-[10px]" style={{ color:'#94a3b8' }}>{liveData.call_id}</span>
+                    <span style={{ color:'rgba(0,0,0,0.2)' }}>·</span>
+                    <span>{calledAt}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] font-black px-3 py-1.5 rounded-xl uppercase tracking-widest"
+                  style={{ backgroundColor:sk.bg, color:sk.text, border:`1px solid ${sk.text}20` }}>{status}</span>
+                <motion.button onClick={handleRetry} disabled={retrying}
+                  whileHover={{ scale:1.04, y:-1 }} whileTap={{ scale:0.96 }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest"
+                  style={{ background:'white', border:'1px solid rgba(0,0,0,0.1)', color:'#09090b', boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
+                  <motion.div animate={retrying ? { rotate:360 } : { rotate:0 }} transition={{ duration:0.7, repeat:retrying ? Infinity : 0, ease:'linear' }}>
+                    <RefreshCw className="w-3.5 h-3.5" />
+                  </motion.div>
+                  Retry Call
+                </motion.button>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Score + meta row */}
+          <div className="grid lg:grid-cols-3 gap-5">
+
+            {/* Score card */}
+            <motion.div initial={{ opacity:0, y:24 }} animate={{ opacity:1, y:0 }}
+              transition={{ delay:0.1, ease:[0.16,1,0.3,1] }} className="lg:col-span-2 premium-card p-6">
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <div className="font-black text-sm uppercase tracking-widest mb-0.5" style={{ color:'#09090b', fontFamily:"'Outfit', sans-serif" }}>AI Qualification Score</div>
+                  <div className="text-xs font-medium" style={{ color:'#71717a' }}>Computed by Sarvam AI after call</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-4xl font-black tabular-nums" style={{ color: liveData.score != null && liveData.score >= 7 ? '#1F8A70' : liveData.score != null && liveData.score >= 4 ? '#D4AF37' : '#94A3B8', fontFamily:"'Outfit', sans-serif" }}>
+                    {liveData.score != null ? liveData.score.toFixed(1) : '—'}
+                  </div>
+                  <div className="text-[10px] font-black uppercase tracking-widest mt-1" style={{ color:'#94a3b8' }}>/10</div>
+                </div>
+              </div>
+              {liveData.score != null && (
+                <div className="h-3 rounded-full overflow-hidden" style={{ backgroundColor:'rgba(31,138,112,0.06)' }}>
+                  <motion.div initial={{ width:0 }} animate={{ width:`${liveData.score * 10}%` }}
+                    transition={{ duration:1.3, ease:[0.16,1,0.3,1], delay:0.3 }}
+                    className="h-full rounded-full"
+                    style={{ background: liveData.score >= 7 ? 'linear-gradient(90deg,#1F8A70,#28B893)' : liveData.score >= 4 ? 'linear-gradient(90deg,#D4AF37,#E6C76E)' : 'linear-gradient(90deg,#94A3B8,#CBD5E1)' }} />
+                </div>
+              )}
+              <div className="mt-5 grid grid-cols-2 gap-3">
+                {[
+                  { label:'Status', value: status },
+                  { label:'Called At', value: calledAt },
+                  { label:'Company', value: liveData.company ?? '—' },
+                  { label:'Outcome', value: bucket ?? '—' },
+                ].map(item => (
+                  <div key={item.label} className="p-3 rounded-xl" style={{ background:'rgba(0,0,0,0.02)', border:'1px solid rgba(0,0,0,0.05)' }}>
+                    <div className="text-[10px] font-black uppercase tracking-widest mb-1" style={{ color:'#94a3b8' }}>{item.label}</div>
+                    <div className="text-sm font-black" style={{ color:'#09090b' }}>{item.value}</div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Right: audio + call id */}
+            <div className="space-y-4">
+              {liveData.recording_url && <AudioPlayer url={liveData.recording_url} />}
+
+              <motion.div initial={{ opacity:0, y:24 }} animate={{ opacity:1, y:0 }}
+                transition={{ delay:0.2 }} className="premium-card p-5">
+                <div className="font-black text-sm uppercase tracking-widest mb-4" style={{ color:'#09090b', fontFamily:"'Outfit', sans-serif" }}>Call Info</div>
+                <div className="space-y-3">
+                  {[
+                    { icon: Globe, label:'Call ID', value: liveData.call_id.slice(0,24)+'…' },
+                    { icon: Database, label:'Source', value:'n8n Workflow' },
+                    { icon: RotateCcw, label:'Platform', value:'ElevenLabs AI' },
+                    { icon: Clock, label:'Time', value: calledAt },
+                  ].map(row => (
+                    <div key={row.label} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <row.icon className="w-3.5 h-3.5" style={{ color:'#94a3b8' }} />
+                        <span className="text-xs font-bold" style={{ color:'#71717a' }}>{row.label}</span>
+                      </div>
+                      <span className="text-[11px] font-bold tabular-nums truncate max-w-[120px]" style={{ color:'#09090b' }}>{row.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            </div>
+          </div>
+
+          {/* Transcript */}
+          <TranscriptPanel transcript={liveData.transcript} summary={liveData.summary ?? undefined} />
+
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // ── Mock lead view (IDs 1-10) ─────────────────────────────────────────────
+  const lead = leadStore[params.id];
   if (!lead) {
     return (
       <DashboardLayout>
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-          <div className="text-5xl font-black" style={{ color: '#D4AF37' }}>404</div>
+          <div className="text-5xl font-black" style={{ color:'#D4AF37' }}>404</div>
           <p className="text-zinc-500 font-medium">Lead not found.</p>
           <button onClick={() => navigate('/leads')} className="text-sm font-black text-emerald-600 hover:underline uppercase tracking-widest">← Back to Leads</button>
         </div>
@@ -215,68 +407,50 @@ export default function LeadDetail({ params }: { params: { id: string } }) {
     <DashboardLayout>
       <div className="space-y-6 max-w-5xl">
 
-        {/* Back */}
-        <motion.button
-          initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.4 }}
-          onClick={() => navigate('/leads')}
+        <motion.button initial={{ opacity:0, x:-12 }} animate={{ opacity:1, x:0 }}
+          transition={{ duration:0.4 }} onClick={() => navigate('/leads')}
           className="flex items-center gap-2 text-xs font-black uppercase tracking-widest hover:gap-3 transition-all"
-          style={{ color: '#71717a' }}
-        >
+          style={{ color:'#71717a' }}>
           <ArrowLeft className="w-3.5 h-3.5" /> Back to leads
         </motion.button>
 
         {/* Header card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-          className="premium-card p-6"
-        >
+        <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }}
+          transition={{ duration:0.55, ease:[0.16,1,0.3,1] }} className="premium-card p-6">
           <div className="flex items-start justify-between flex-wrap gap-4">
             <div className="flex items-center gap-4">
-              {/* Avatar */}
               <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-white text-lg font-black shrink-0"
-                style={{ background: 'linear-gradient(135deg,#1F8A70,#0F3D3E)', border: '2px solid rgba(212,175,55,0.3)', boxShadow: '0 4px 16px rgba(31,138,112,0.25)' }}>
-                {lead.name.slice(0, 2).toUpperCase()}
+                style={{ background:'linear-gradient(135deg,#1F8A70,#0F3D3E)', border:'2px solid rgba(212,175,55,0.3)', boxShadow:'0 4px 16px rgba(31,138,112,0.25)' }}>
+                {lead.name.slice(0,2).toUpperCase()}
               </div>
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <h1 className="text-2xl font-black tracking-tight" style={{ color: '#09090b', fontFamily: "'Outfit', sans-serif" }}>{lead.name}</h1>
+                  <h1 className="text-2xl font-black tracking-tight" style={{ color:'#09090b', fontFamily:"'Outfit', sans-serif" }}>{lead.name}</h1>
                   {lead.bucket && (
                     <span className="text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-widest"
-                      style={{ backgroundColor: bk.bg, color: bk.text, border: `1px solid ${bk.border}` }}>
-                      {lead.bucket}
-                    </span>
+                      style={{ backgroundColor:bk.bg, color:bk.text, border:`1px solid ${bk.border}` }}>{lead.bucket}</span>
                   )}
                 </div>
-                <div className="flex items-center gap-3 text-xs font-medium flex-wrap" style={{ color: '#71717a' }}>
-                  <span style={{ fontFamily: 'monospace' }}>{lead.phone}</span>
-                  <span style={{ color: 'rgba(0,0,0,0.2)' }}>·</span>
+                <div className="flex items-center gap-3 text-xs font-medium flex-wrap" style={{ color:'#71717a' }}>
+                  <span className="font-mono">{lead.phone}</span>
+                  <span style={{ color:'rgba(0,0,0,0.2)' }}>·</span>
                   <span>{lead.source}</span>
-                  <span style={{ color: 'rgba(0,0,0,0.2)' }}>·</span>
+                  <span style={{ color:'rgba(0,0,0,0.2)' }}>·</span>
                   <span>Created {lead.date}</span>
                 </div>
               </div>
             </div>
-
-            {/* Actions */}
             <div className="flex items-center gap-3">
               <span className="text-[10px] font-black px-3 py-1.5 rounded-xl uppercase tracking-widest"
-                style={{ backgroundColor: sk.bg, color: sk.text, border: `1px solid ${sk.text}20` }}>
-                {lead.status}
-              </span>
-              <motion.button
-                whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.96 }}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all"
-                style={{ background: 'white', border: '1px solid rgba(0,0,0,0.1)', color: '#09090b', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
-              >
+                style={{ backgroundColor:sk.bg, color:sk.text, border:`1px solid ${sk.text}20` }}>{lead.status}</span>
+              <motion.button whileHover={{ scale:1.04, y:-1 }} whileTap={{ scale:0.96 }}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest"
+                style={{ background:'white', border:'1px solid rgba(0,0,0,0.1)', color:'#09090b', boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
                 <RefreshCw className="w-3.5 h-3.5" /> Retry Call
               </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.96 }}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest text-white transition-all"
-                style={{ background: 'linear-gradient(135deg,#1F8A70,#0F3D3E)', boxShadow: '0 4px 14px rgba(31,138,112,0.3)' }}
-              >
+              <motion.button whileHover={{ scale:1.04, y:-1 }} whileTap={{ scale:0.96 }}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest text-white"
+                style={{ background:'linear-gradient(135deg,#1F8A70,#0F3D3E)', boxShadow:'0 4px 14px rgba(31,138,112,0.3)' }}>
                 <PhoneCall className="w-3.5 h-3.5" /> Call Now
               </motion.button>
             </div>
@@ -285,34 +459,26 @@ export default function LeadDetail({ params }: { params: { id: string } }) {
 
         {/* Main grid */}
         <div className="grid lg:grid-cols-3 gap-6">
-
-          {/* Left: BANT */}
-          <motion.div
-            initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-            className="lg:col-span-2 premium-card p-6"
-          >
+          <motion.div initial={{ opacity:0, y:24 }} animate={{ opacity:1, y:0 }}
+            transition={{ duration:0.6, delay:0.1, ease:[0.16,1,0.3,1] }} className="lg:col-span-2 premium-card p-6">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <div className="font-black text-sm uppercase tracking-widest mb-0.5" style={{ color: '#09090b', fontFamily: "'Outfit', sans-serif" }}>
-                  BANT Qualification
-                </div>
-                <div className="text-xs font-medium" style={{ color: '#71717a' }}>Budget · Authority · Need · Timeline</div>
+                <div className="font-black text-sm uppercase tracking-widest mb-0.5" style={{ color:'#09090b', fontFamily:"'Outfit', sans-serif" }}>BANT Qualification</div>
+                <div className="text-xs font-medium" style={{ color:'#71717a' }}>Budget · Authority · Need · Timeline</div>
               </div>
               <div className="text-right">
-                <div className="text-3xl font-black tabular-nums leading-none" style={{ color: '#1F8A70', fontFamily: "'Outfit', sans-serif" }}>
+                <div className="text-3xl font-black tabular-nums leading-none" style={{ color:'#1F8A70', fontFamily:"'Outfit', sans-serif" }}>
                   {lead.score != null ? lead.score.toFixed(1) : '—'}
                 </div>
-                <div className="text-[10px] font-black uppercase tracking-widest mt-1" style={{ color: '#94a3b8' }}>/10</div>
+                <div className="text-[10px] font-black uppercase tracking-widest mt-1" style={{ color:'#94a3b8' }}>/10</div>
               </div>
             </div>
-
             {lead.status === 'PENDING' || lead.score == null ? (
               <div className="flex flex-col items-center justify-center py-12 gap-3">
-                <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ backgroundColor: 'rgba(212,175,55,0.08)' }}>
-                  <Zap className="w-5 h-5" style={{ color: '#D4AF37' }} />
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ backgroundColor:'rgba(212,175,55,0.08)' }}>
+                  <Zap className="w-5 h-5" style={{ color:'#D4AF37' }} />
                 </div>
-                <p className="text-sm font-bold" style={{ color: '#94a3b8' }}>No call data yet — lead is pending qualification</p>
+                <p className="text-sm font-bold" style={{ color:'#94a3b8' }}>No call data yet — lead is pending qualification</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-5">
@@ -322,105 +488,80 @@ export default function LeadDetail({ params }: { params: { id: string } }) {
                 <BANTBar label="Timeline" value={lead.bant.timeline} />
               </div>
             )}
-
-            {/* Overall BANT score bar */}
             {lead.score != null && (
-              <div className="mt-6 pt-5 border-t" style={{ borderColor: 'rgba(0,0,0,0.06)' }}>
+              <div className="mt-6 pt-5 border-t" style={{ borderColor:'rgba(0,0,0,0.06)' }}>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-black uppercase tracking-widest" style={{ color: '#94a3b8' }}>Overall Score</span>
-                  <span className="text-xs font-black" style={{ color: '#1F8A70' }}>{totalBANT.toFixed(1)} / 10</span>
+                  <span className="text-xs font-black uppercase tracking-widest" style={{ color:'#94a3b8' }}>Overall Score</span>
+                  <span className="text-xs font-black" style={{ color:'#1F8A70' }}>{totalBANT.toFixed(1)} / 10</span>
                 </div>
-                <div className="h-2.5 rounded-full overflow-hidden" style={{ backgroundColor: 'rgba(31,138,112,0.08)' }}>
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${totalBANT * 10}%` }}
-                    transition={{ duration: 1.3, ease: [0.16, 1, 0.3, 1], delay: 0.4 }}
-                    className="h-full rounded-full"
-                    style={{ background: 'linear-gradient(90deg, #1F8A70, #28B893)' }}
-                  />
+                <div className="h-2.5 rounded-full overflow-hidden" style={{ backgroundColor:'rgba(31,138,112,0.08)' }}>
+                  <motion.div initial={{ width:0 }} animate={{ width:`${totalBANT * 10}%` }}
+                    transition={{ duration:1.3, ease:[0.16,1,0.3,1], delay:0.4 }}
+                    className="h-full rounded-full" style={{ background:'linear-gradient(90deg,#1F8A70,#28B893)' }} />
                 </div>
               </div>
             )}
           </motion.div>
 
-          {/* Right column */}
           <div className="space-y-5">
-
-            {/* System Metadata */}
-            <motion.div
-              initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.18, ease: [0.16, 1, 0.3, 1] }}
-              className="premium-card p-5"
-            >
-              <div className="font-black text-sm uppercase tracking-widest mb-4" style={{ color: '#09090b', fontFamily: "'Outfit', sans-serif" }}>
-                System Metadata
-              </div>
+            <motion.div initial={{ opacity:0, y:24 }} animate={{ opacity:1, y:0 }}
+              transition={{ duration:0.6, delay:0.18, ease:[0.16,1,0.3,1] }} className="premium-card p-5">
+              <div className="font-black text-sm uppercase tracking-widest mb-4" style={{ color:'#09090b', fontFamily:"'Outfit', sans-serif" }}>System Metadata</div>
               <div className="space-y-3.5">
                 {[
-                  { icon: Globe,      label: 'Language',    value: lead.meta.language,    badge: null },
-                  { icon: RotateCcw,  label: 'Retry Count', value: String(lead.meta.retryCount), badge: null },
-                  { icon: Database,   label: 'CRM Sync',    value: lead.meta.crmSync,     badge: ck },
-                  { icon: Clock,      label: 'Sync Time',   value: lead.meta.syncTime,    badge: null },
+                  { icon: Globe,     label:'Language',    value:lead.meta.language,         badge:null },
+                  { icon: RotateCcw, label:'Retry Count', value:String(lead.meta.retryCount),badge:null },
+                  { icon: Database,  label:'CRM Sync',    value:lead.meta.crmSync,           badge:ck   },
+                  { icon: Clock,     label:'Sync Time',   value:lead.meta.syncTime,          badge:null },
                 ].map(row => (
                   <div key={row.label} className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
-                      <row.icon className="w-3.5 h-3.5 shrink-0" style={{ color: '#94a3b8' }} />
-                      <span className="text-xs font-bold" style={{ color: '#71717a' }}>{row.label}</span>
+                      <row.icon className="w-3.5 h-3.5 shrink-0" style={{ color:'#94a3b8' }} />
+                      <span className="text-xs font-bold" style={{ color:'#71717a' }}>{row.label}</span>
                     </div>
                     {row.badge ? (
                       <span className="text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest"
-                        style={{ backgroundColor: row.badge.bg, color: row.badge.text }}>
-                        {row.value}
-                      </span>
+                        style={{ backgroundColor:row.badge.bg, color:row.badge.text }}>{row.value}</span>
                     ) : (
-                      <span className="text-xs font-bold tabular-nums" style={{ color: '#09090b' }}>{row.value}</span>
+                      <span className="text-xs font-bold tabular-nums" style={{ color:'#09090b' }}>{row.value}</span>
                     )}
                   </div>
                 ))}
               </div>
             </motion.div>
-
-            {/* Email */}
-            <motion.div
-              initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.26, ease: [0.16, 1, 0.3, 1] }}
-              className="premium-card p-5"
-            >
-              <div className="font-black text-sm uppercase tracking-widest mb-3" style={{ color: '#09090b', fontFamily: "'Outfit', sans-serif" }}>Contact</div>
-              <div className="text-xs font-medium mb-1" style={{ color: '#71717a' }}>Email</div>
-              <div className="text-sm font-bold truncate" style={{ color: '#09090b' }}>{lead.email}</div>
-              <div className="text-xs font-medium mt-3 mb-1" style={{ color: '#71717a' }}>Company</div>
-              <div className="text-sm font-bold" style={{ color: '#09090b' }}>{lead.company}</div>
+            <motion.div initial={{ opacity:0, y:24 }} animate={{ opacity:1, y:0 }}
+              transition={{ duration:0.6, delay:0.26, ease:[0.16,1,0.3,1] }} className="premium-card p-5">
+              <div className="font-black text-sm uppercase tracking-widest mb-3" style={{ color:'#09090b', fontFamily:"'Outfit', sans-serif" }}>Contact</div>
+              <div className="text-xs font-medium mb-1" style={{ color:'#71717a' }}>Email</div>
+              <div className="text-sm font-bold truncate" style={{ color:'#09090b' }}>{lead.email}</div>
+              <div className="text-xs font-medium mt-3 mb-1" style={{ color:'#71717a' }}>Company</div>
+              <div className="text-sm font-bold" style={{ color:'#09090b' }}>{lead.company}</div>
             </motion.div>
           </div>
         </div>
 
         {/* Call Activity */}
-        <motion.div
-          initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.22, ease: [0.16, 1, 0.3, 1] }}
-          className="premium-card overflow-hidden"
-        >
-          <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid rgba(212,175,55,0.08)' }}>
-            <div className="font-black text-sm uppercase tracking-widest" style={{ color: '#09090b', fontFamily: "'Outfit', sans-serif" }}>
-              Call Activity
-            </div>
+        <motion.div initial={{ opacity:0, y:24 }} animate={{ opacity:1, y:0 }}
+          transition={{ duration:0.6, delay:0.22, ease:[0.16,1,0.3,1] }} className="premium-card overflow-hidden">
+          <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom:'1px solid rgba(212,175,55,0.08)' }}>
+            <div className="font-black text-sm uppercase tracking-widest" style={{ color:'#09090b', fontFamily:"'Outfit', sans-serif" }}>Call Activity</div>
             <span className="text-xs font-black w-6 h-6 rounded-full flex items-center justify-center"
-              style={{ backgroundColor: 'rgba(31,138,112,0.08)', color: '#1F8A70' }}>
-              {lead.calls.length}
-            </span>
+              style={{ backgroundColor:'rgba(31,138,112,0.08)', color:'#1F8A70' }}>{lead.calls.length}</span>
           </div>
           <div className="px-6 py-2">
             {lead.calls.length === 0 ? (
               <div className="py-12 text-center">
-                <PhoneCall className="w-8 h-8 mx-auto mb-3" style={{ color: 'rgba(0,0,0,0.1)' }} />
-                <p className="text-sm font-bold" style={{ color: '#94a3b8' }}>No calls made yet</p>
+                <PhoneCall className="w-8 h-8 mx-auto mb-3" style={{ color:'rgba(0,0,0,0.1)' }} />
+                <p className="text-sm font-bold" style={{ color:'#94a3b8' }}>No calls made yet</p>
               </div>
             ) : (
               lead.calls.map((call, i) => <CallRow key={i} call={call} i={i} />)
             )}
           </div>
         </motion.div>
+
+        {/* Transcript for mock leads */}
+        {lead.transcript && <TranscriptPanel transcript={lead.transcript} summary={lead.summary} />}
 
       </div>
     </DashboardLayout>

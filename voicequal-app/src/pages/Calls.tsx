@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { PhoneCall, PhoneOff, Clock, Mic, PhoneMissed, RefreshCw } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import DashboardLayout from "../components/DashboardLayout";
 import { supabase, type CallResult } from "../lib/supabase";
 
@@ -86,6 +87,7 @@ function MiniWave({ color }: { color: string }) {
 }
 
 export default function Calls() {
+  const [, navigate] = useLocation();
   const [calls, setCalls] = useState(MOCK_CALLS);
   const [loading, setLoading] = useState(true);
   const [usingLive, setUsingLive] = useState(false);
@@ -199,7 +201,8 @@ export default function Calls() {
               <motion.div key={call.id}
                 initial={{ opacity: 0, x: -14 }} animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.05, ease: [0.16, 1, 0.3, 1] }}
-                className="flex items-center gap-3 px-6 py-4 cursor-pointer transition-all activity-row group"
+                onClick={() => navigate(`/leads/${call.id}`)}
+                className="flex items-center gap-3 px-6 py-4 cursor-pointer transition-all activity-row group hover:bg-emerald-50/30"
                 style={{ borderBottom: "1px solid rgba(0,0,0,0.04)" }}
               >
                 {/* Lead icon + info */}
