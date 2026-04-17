@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   PhoneCall, PhoneOff, Clock, Mic, PhoneMissed,
   RefreshCw, MessageSquare, PlayCircle, Loader2, Sparkles,
+  FileText, ChevronDown,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import DashboardLayout from "../components/DashboardLayout";
@@ -173,27 +174,38 @@ function MiniWave({ color }: { color: string }) {
   );
 }
 
-// ── Expanded panel (transcript + audio + BANT) ────────────────────────────────
+// ── Expanded panel (summary + transcript + audio + BANT) ─────────────────────
 function ExpandedPanel({ callId, bant }: { callId: string; bant: BANTScore | null }) {
-  const [txLoading, setTxLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [summary, setSummary] = useState<string | null>(null);
   const [transcript, setTranscript] = useState<{ role: string; message: string }[]>([]);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [audioLoading, setAudioLoading] = useState(true);
   const [audioError, setAudioError] = useState(false);
+  const [txOpen, setTxOpen] = useState(true);
   const urlRef = useRef<string | null>(null);
 
   useEffect(() => {
     let active = true;
 
-    const loadTranscript = async () => {
+    const loadConversation = async () => {
       try {
         const res = await fetch(`https://api.elevenlabs.io/v1/convai/conversations/${callId}`, {
           headers: { "xi-api-key": ELEVENLABS_API_KEY },
         });
         const d = await res.json();
-        if (active && d.transcript) setTranscript(d.transcript);
+        if (!active) return;
+        if (d.transcript) setTranscript(d.transcript);
+        // ElevenLabs returns summary under analysis.transcript_summary or conversation_summary
+        const s =
+          d.analysis?.transcript_summary ??
+          d.analysis?.summary ??
+          d.conversation_summary ??
+          d.metadata?.summary ??
+          null;
+        setSummary(s);
       } catch { /* silent */ } finally {
-        if (active) setTxLoading(false);
+        if (active) setLoading(false);
       }
     };
 
@@ -215,7 +227,7 @@ function ExpandedPanel({ callId, bant }: { callId: string; bant: BANTScore | nul
       }
     };
 
-    loadTranscript();
+    loadConversation();
     loadAudio();
 
     return () => {
@@ -227,104 +239,172 @@ function ExpandedPanel({ callId, bant }: { callId: string; bant: BANTScore | nul
   const bantColor = bant ? SCORE_COLOR(bant.total) : "#94a3b8";
 
   return (
-    <div className="bg-zinc-50/80 border-b border-zinc-100 px-6 py-5">
-      <div className="flex flex-col lg:flex-row gap-5">
+    <div className="border-b border-zinc-100 px-6 py-5 space-y-4" style={{ background: "rgba(248,250,252,0.8)" }}>
+
+      {/* ── Summary card ── */}
+      <div className="bg-white rounded-2xl border border-zinc-100 shadow-sm p-4">
+        <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-2 flex items-center gap-1.5">
+          <FileText className="w-3.5 h-3.5" /> Call Summary
+        </h3>
+        {loading ? (
+          <div className="flex items-center gap-2 text-sm text-zinc-400 py-1">
+            <Loader2 className="w-4 h-4 animate-spin shrink-0" /> Loading summary…
+          </div>
+        ) : summary ? (
+          <p className="text-sm leading-relaxed font-medium" style={{ color: "#374151" }}>{summary}</p>
+        ) : (
+          <p className="text-sm italic text-zinc-400">No summary available for this call.</p>
+        )}
+      </div>
+
+      {/* ── Audio player ── */}
+      <div className="bg-white rounded-2xl border border-zinc-100 shadow-sm px-4 py-3 flex items-center gap-3">
+        <PlayCircle className="w-4 h-4 shrink-0" style={{ color: "#1F8A70" }} />
+        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400 w-20 shrink-0">Recording</span>
+        {audioLoading ? (
+          <div className="flex items-center gap-2 text-sm text-zinc-400">
+            <Loader2 className="w-4 h-4 animate-spin shrink-0" /> Loading…
+          </div>
+        ) : audioError || !audioUrl ? (
+          <p className="text-sm text-zinc-400 italic">No recording available.</p>
+        ) : (
+          <audio controls className="flex-1 h-8" src={audioUrl} />
+        )}
+      </div>
+
+      {/* ── Transcript + BANT row ── */}
+      <div className="flex flex-col lg:flex-row gap-4">
 
         {/* Transcript */}
-        <div className="flex-1 min-w-0 bg-white rounded-2xl border border-zinc-100 shadow-sm p-4 max-h-[280px] overflow-y-auto">
-          <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-3 flex items-center gap-1.5">
-            <MessageSquare className="w-3.5 h-3.5" /> Transcript
-          </h3>
-          {txLoading ? (
-            <div className="flex justify-center items-center h-16">
-              <Loader2 className="w-5 h-5 animate-spin text-zinc-300" />
-            </div>
-          ) : transcript.length === 0 ? (
-            <p className="text-sm text-zinc-400 italic">No transcript available.</p>
-          ) : (
-            <div className="space-y-3">
-              {transcript.map((msg, i) => (
-                <div key={i} className={`flex ${msg.role !== "agent" ? "justify-end" : "justify-start"}`}>
-                  <div className={`max-w-[78%] px-3.5 py-2 rounded-2xl text-sm leading-relaxed ${
-                    msg.role !== "agent"
-                      ? "bg-emerald-600 text-white rounded-tr-sm"
-                      : "bg-zinc-100 text-zinc-800 rounded-tl-sm"
-                  }`}>
-                    <div className={`text-[9px] font-black uppercase tracking-widest mb-1 ${
-                      msg.role !== "agent" ? "text-emerald-200" : "text-zinc-400"
-                    }`}>{msg.role === "agent" ? "AI Agent" : "Lead"}</div>
-                    {msg.message}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Right column: BANT + Audio */}
-        <div className="flex flex-col gap-4 w-full lg:w-72 shrink-0">
-
-          {/* BANT Score Panel */}
-          <div className="bg-white rounded-2xl border border-zinc-100 shadow-sm p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5" /> AI BANT Score
-              </h3>
-              {bant && (
-                <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full"
-                  style={{ backgroundColor: `${bantColor}12`, color: bantColor, border: `1px solid ${bantColor}25` }}>
-                  {bant.label}
+        <div className="flex-1 min-w-0 bg-white rounded-2xl border border-zinc-100 shadow-sm overflow-hidden">
+          <button
+            onClick={() => setTxOpen(o => !o)}
+            className="w-full flex items-center justify-between px-4 py-3 hover:bg-zinc-50 transition-colors"
+          >
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 flex items-center gap-1.5">
+              <MessageSquare className="w-3.5 h-3.5" /> Transcript
+              {transcript.length > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 rounded-full text-[9px] font-black"
+                  style={{ background: "rgba(31,138,112,0.1)", color: "#1F8A70" }}>
+                  {transcript.length} turns
                 </span>
               )}
-            </div>
-
-            {!bant ? (
-              <div className="flex items-center gap-2 text-sm text-zinc-400 py-2">
-                <Loader2 className="w-4 h-4 animate-spin shrink-0" />
-                Scoring with AI…
-              </div>
-            ) : (
-              <>
-                {bant.summary && (
-                  <p className="text-[11px] text-zinc-500 font-medium leading-relaxed mb-3 pb-3 border-b border-zinc-100 italic">
-                    "{bant.summary}"
-                  </p>
-                )}
-                <div className="space-y-2.5">
-                  <BANTBar label="Budget"    value={bant.budget}    color={SCORE_COLOR(bant.budget)} />
-                  <BANTBar label="Authority" value={bant.authority} color={SCORE_COLOR(bant.authority)} />
-                  <BANTBar label="Need"      value={bant.need}      color={SCORE_COLOR(bant.need)} />
-                  <BANTBar label="Timeline"  value={bant.timeline}  color={SCORE_COLOR(bant.timeline)} />
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Audio */}
-          <div className="bg-white rounded-2xl border border-zinc-100 shadow-sm p-4">
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-3 flex items-center gap-1.5">
-              <PlayCircle className="w-3.5 h-3.5" /> Recording
             </h3>
-            {audioLoading ? (
-              <div className="flex items-center gap-2 text-sm text-zinc-400">
-                <Loader2 className="w-4 h-4 animate-spin shrink-0" /> Loading…
-              </div>
-            ) : audioError || !audioUrl ? (
-              <p className="text-sm text-zinc-400 italic">No recording available.</p>
-            ) : (
-              <audio controls className="w-full" src={audioUrl} />
+            <motion.div animate={{ rotate: txOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
+              <ChevronDown className="w-4 h-4 text-zinc-400" />
+            </motion.div>
+          </button>
+          <AnimatePresence initial={false}>
+            {txOpen && (
+              <motion.div
+                initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }}
+                transition={{ duration: 0.25, ease: "easeInOut" }}
+                className="overflow-hidden"
+              >
+                <div className="px-4 pb-4 max-h-72 overflow-y-auto">
+                  {loading ? (
+                    <div className="flex justify-center items-center h-16">
+                      <Loader2 className="w-5 h-5 animate-spin text-zinc-300" />
+                    </div>
+                  ) : transcript.length === 0 ? (
+                    <p className="text-sm text-zinc-400 italic py-2">No transcript available.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {transcript.map((msg, i) => (
+                        <div key={i} className={`flex ${msg.role !== "agent" ? "justify-end" : "justify-start"}`}>
+                          <div className={`max-w-[78%] px-3.5 py-2 rounded-2xl text-sm leading-relaxed ${
+                            msg.role !== "agent"
+                              ? "bg-emerald-600 text-white rounded-tr-sm"
+                              : "bg-zinc-100 text-zinc-800 rounded-tl-sm"
+                          }`}>
+                            <div className={`text-[9px] font-black uppercase tracking-widest mb-1 ${
+                              msg.role !== "agent" ? "text-emerald-200" : "text-zinc-400"
+                            }`}>{msg.role === "agent" ? "AI Agent" : "Lead"}</div>
+                            {msg.message}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* BANT Score Panel */}
+        <div className="bg-white rounded-2xl border border-zinc-100 shadow-sm p-4 w-full lg:w-64 shrink-0">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5" /> BANT Score
+            </h3>
+            {bant && (
+              <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full"
+                style={{ backgroundColor: `${bantColor}12`, color: bantColor, border: `1px solid ${bantColor}25` }}>
+                {bant.label}
+              </span>
             )}
           </div>
-
+          {!bant ? (
+            <div className="flex items-center gap-2 text-sm text-zinc-400 py-2">
+              <Loader2 className="w-4 h-4 animate-spin shrink-0" /> Scoring…
+            </div>
+          ) : (
+            <>
+              {bant.summary && (
+                <p className="text-[11px] text-zinc-500 font-medium leading-relaxed mb-3 pb-3 border-b border-zinc-100 italic">
+                  "{bant.summary}"
+                </p>
+              )}
+              <div className="space-y-2.5">
+                <BANTBar label="Budget"    value={bant.budget}    color={SCORE_COLOR(bant.budget)} />
+                <BANTBar label="Authority" value={bant.authority} color={SCORE_COLOR(bant.authority)} />
+                <BANTBar label="Need"      value={bant.need}      color={SCORE_COLOR(bant.need)} />
+                <BANTBar label="Timeline"  value={bant.timeline}  color={SCORE_COLOR(bant.timeline)} />
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
+// ── Mock data (shown below real API calls, replaced when real data arrives) ───
+const MOCK_CALLS: CallRow[] = [
+  { id: "mock-001", lead: "Rajesh Kumar — TechSoft Solutions",      duration: "4:32", time: "09:15 AM", status: "COMPLETED", outcome: "HOT",  scoring: false,
+    score: { total: 8.5, budget: 9, authority: 8, need: 9, timeline: 8, label: "HOT",  summary: "Strong budget with urgent Q2 need" } },
+  { id: "mock-002", lead: "Priya Sharma — FinEdge Capital",         duration: "3:18", time: "09:48 AM", status: "COMPLETED", outcome: "HOT",  scoring: false,
+    score: { total: 7.8, budget: 8, authority: 9, need: 7, timeline: 7, label: "HOT",  summary: "CFO confirmed annual budget approval" } },
+  { id: "mock-003", lead: "Aarav Mehta — LogiTrack India",          duration: "2:55", time: "10:22 AM", status: "COMPLETED", outcome: "WARM", scoring: false,
+    score: { total: 5.5, budget: 5, authority: 6, need: 6, timeline: 5, label: "WARM", summary: "Interested but awaiting board sign-off" } },
+  { id: "mock-004", lead: "Sunita Verma — HealthBridge Pvt Ltd",    duration: "5:10", time: "10:55 AM", status: "COMPLETED", outcome: "HOT",  scoring: false,
+    score: { total: 9.0, budget: 9, authority: 9, need: 9, timeline: 9, label: "HOT",  summary: "Immediate need, budget ready to deploy" } },
+  { id: "mock-005", lead: "Karan Nair — RetailMax Group",           duration: "1:45", time: "11:30 AM", status: "FAILED",    outcome: "COLD", scoring: false, score: null },
+  { id: "mock-006", lead: "Deepika Joshi — EduPrime Network",       duration: "3:40", time: "12:05 PM", status: "COMPLETED", outcome: "WARM", scoring: false,
+    score: { total: 6.2, budget: 6, authority: 7, need: 7, timeline: 5, label: "WARM", summary: "Evaluating two other vendors in parallel" } },
+  { id: "mock-007", lead: "Vikram Singh — AutoParts Direct",        duration: "4:15", time: "12:40 PM", status: "COMPLETED", outcome: "HOT",  scoring: false,
+    score: { total: 8.0, budget: 8, authority: 8, need: 8, timeline: 8, label: "HOT",  summary: "Fleet expansion driving urgent timeline" } },
+  { id: "mock-008", lead: "Ananya Bose — CloudServe Technologies",  duration: "2:08", time: "01:15 PM", status: "COMPLETED", outcome: "COLD", scoring: false,
+    score: { total: 3.2, budget: 3, authority: 4, need: 3, timeline: 3, label: "COLD", summary: "No current budget, review in 6 months" } },
+  { id: "mock-009", lead: "Manish Patel — GreenEnergy Corp",        duration: "6:02", time: "02:00 PM", status: "COMPLETED", outcome: "HOT",  scoring: false,
+    score: { total: 9.2, budget: 10, authority: 9, need: 9, timeline: 9, label: "HOT", summary: "Decision maker with approved capex budget" } },
+  { id: "mock-010", lead: "Ritu Agarwal — MediScan Diagnostics",   duration: "3:55", time: "02:45 PM", status: "COMPLETED", outcome: "WARM", scoring: false,
+    score: { total: 6.8, budget: 7, authority: 6, need: 8, timeline: 6, label: "WARM", summary: "High need but procurement process slow" } },
+  { id: "mock-011", lead: "Siddharth Roy — NeoFinance Ltd",         duration: "4:48", time: "03:20 PM", status: "COMPLETED", outcome: "HOT",  scoring: false,
+    score: { total: 8.8, budget: 9, authority: 9, need: 8, timeline: 9, label: "HOT",  summary: "Series B funded, CTO directly engaged" } },
+  { id: "mock-012", lead: "Kavita Reddy — AgriTech Ventures",       duration: "1:22", time: "04:05 PM", status: "FAILED",    outcome: "COLD", scoring: false, score: null },
+  { id: "mock-013", lead: "Arjun Kapoor — SmartCity Infra",         duration: "5:30", time: "04:40 PM", status: "COMPLETED", outcome: "WARM", scoring: false,
+    score: { total: 5.8, budget: 6, authority: 5, need: 7, timeline: 5, label: "WARM", summary: "Government tender process adds delay" } },
+  { id: "mock-014", lead: "Neha Gupta — InsureMax Digital",         duration: "3:12", time: "05:15 PM", status: "COMPLETED", outcome: "HOT",  scoring: false,
+    score: { total: 7.5, budget: 8, authority: 7, need: 8, timeline: 7, label: "HOT",  summary: "Renewal deadline creating urgency" } },
+  { id: "mock-015", lead: "Rohit Desai — ManuTech Systems",         duration: "2:50", time: "05:50 PM", status: "COMPLETED", outcome: "WARM", scoring: false,
+    score: { total: 5.0, budget: 5, authority: 5, need: 5, timeline: 5, label: "WARM", summary: "Mid-cycle evaluation, no urgency noted" } },
+];
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function Calls() {
-  const [calls, setCalls] = useState<CallRow[]>([]);
+  const [calls, setCalls] = useState<CallRow[]>(MOCK_CALLS);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
 
@@ -351,7 +431,8 @@ export default function Calls() {
           score: scoreCache.current[c.conversation_id] ?? null,
           scoring: false,
         }));
-        setCalls(rows);
+        // Real data on top, mock data below (mock IDs start with "mock-" so no collision)
+        setCalls([...rows, ...MOCK_CALLS]);
 
         // ── Fast parallel scoring ─────────────────────────────────────────────
         // 1. Fetch all transcripts in parallel
@@ -496,9 +577,22 @@ export default function Calls() {
             const isLive = call.status === "CALLING";
             const isExpanded = expanded === call.id;
             const outcomeColor = OUTCOME_COLOR[call.outcome] ?? "#94a3b8";
+            const isMock = call.id.startsWith("mock-");
+            const isFirstMock = isMock && (i === 0 || !calls[i - 1].id.startsWith("mock-"));
 
             return (
               <div key={call.id}>
+                {/* Divider between real and mock data */}
+                {isFirstMock && (
+                  <div className="flex items-center gap-3 px-6 py-2" style={{ background: "rgba(212,175,55,0.03)", borderBottom: "1px solid rgba(212,175,55,0.08)" }}>
+                    <div className="h-px flex-1" style={{ background: "rgba(212,175,55,0.15)" }} />
+                    <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full"
+                      style={{ color: "#A67C2E", background: "rgba(212,175,55,0.08)", border: "1px solid rgba(212,175,55,0.15)" }}>
+                      Sample Data — New calls appear above
+                    </span>
+                    <div className="h-px flex-1" style={{ background: "rgba(212,175,55,0.15)" }} />
+                  </div>
+                )}
                 <motion.div
                   initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.04, ease: [0.16, 1, 0.3, 1] }}

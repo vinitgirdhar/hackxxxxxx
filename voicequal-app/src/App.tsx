@@ -7,6 +7,7 @@ import Calls from "./pages/Calls";
 import Analytics from "./pages/Analytics";
 import Pipeline from "./pages/Pipeline";
 import SettingsPage from "./pages/SettingsPage";
+import HelpDocs from "./pages/HelpDocs";
 
 export default function App() {
   return (
@@ -19,6 +20,7 @@ export default function App() {
       <Route path="/analytics" component={Analytics} />
       <Route path="/pipeline" component={Pipeline} />
       <Route path="/settings" component={SettingsPage} />
+      <Route path="/help" component={HelpDocs} />
       <Route>
         <div className="min-h-screen flex items-center justify-center" style={{ background: "#f6faf9" }}>
           <div className="text-center">
