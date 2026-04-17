@@ -1,6 +1,8 @@
 import { motion } from "framer-motion";
-import { PhoneCall, PhoneOff, Clock, Mic, PhoneMissed } from "lucide-react";
+import { PhoneCall, PhoneOff, Clock, Mic, PhoneMissed, RefreshCw } from "lucide-react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "../components/DashboardLayout";
+import { supabase, type CallResult } from "../lib/supabase";
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 24 },
@@ -8,7 +10,7 @@ const fadeUp = (delay = 0) => ({
   transition: { duration: 0.55, delay, ease: [0.16, 1, 0.3, 1] as const },
 });
 
-const calls = [
+const MOCK_CALLS = [
   { id: '1', lead: 'Priya Menon',  company: 'Infosys',       duration: '4:32', time: '10:12 AM', status: 'COMPLETED', score: 9.1, outcome: 'HOT'  },
   { id: '2', lead: 'Arjun Sharma', company: 'Wipro',         duration: '3:47', time: '10:45 AM', status: 'COMPLETED', score: 8.5, outcome: 'HOT'  },
   { id: '3', lead: 'Neha Kapoor',  company: 'TCS',           duration: '5:10', time: '11:20 AM', status: 'COMPLETED', score: 6.2, outcome: 'WARM' },
@@ -18,6 +20,33 @@ const calls = [
   { id: '7', lead: 'Kavya Reddy',  company: 'Mphasis',       duration: '6:22', time: '2:00 PM',  status: 'COMPLETED', score: 7.3, outcome: 'HOT'  },
   { id: '8', lead: 'Meera Iyer',   company: 'L&T Infotech',  duration: '4:58', time: '2:45 PM',  status: 'COMPLETED', score: 8.9, outcome: 'HOT'  },
 ];
+
+function formatDuration(seconds?: number): string {
+  if (!seconds) return '—';
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+function formatTime(iso?: string): string {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+}
+
+function mapDbToCall(r: CallResult) {
+  return {
+    id: r.id,
+    lead: r.lead_name,
+    company: r.company ?? '—',
+    duration: typeof (r as unknown as Record<string, unknown>).duration_seconds === 'number'
+      ? formatDuration((r as unknown as Record<string, number>).duration_seconds)
+      : (r.duration ?? '—'),
+    time: formatTime(r.called_at),
+    status: r.status,
+    score: r.score ?? null,
+    outcome: r.outcome ?? null,
+  };
+}
 
 const statusMap: Record<string, { icon: typeof PhoneCall; color: string; bg: string; label: string }> = {
   COMPLETED: { icon: PhoneCall,   color: "#1F8A70", bg: "rgba(31,138,112,0.08)",  label: "Completed" },
@@ -44,11 +73,46 @@ function MiniWave({ color }: { color: string }) {
 }
 
 export default function Calls() {
+  const [calls, setCalls] = useState(MOCK_CALLS);
+  const [loading, setLoading] = useState(true);
+  const [usingLive, setUsingLive] = useState(false);
+
+  const fetchCalls = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('call_results')
+        .select('*')
+        .order('called_at', { ascending: false })
+        .limit(50);
+
+      if (!error && data && data.length > 0) {
+        setCalls(data.map(mapDbToCall));
+        setUsingLive(true);
+      }
+    } catch {
+      // fallback to mock data silently
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchCalls(); }, []);
+
+  const completed = calls.filter(c => c.status === 'COMPLETED').length;
+  const failed = calls.filter(c => c.status === 'FAILED').length;
+  const totalSecs = calls.filter(c => c.status === 'COMPLETED' && c.duration !== '—')
+    .reduce((acc, c) => {
+      const [m, s] = c.duration.split(':').map(Number);
+      return acc + (m * 60 + (s || 0));
+    }, 0);
+  const avgDur = completed > 0 ? `${Math.floor(totalSecs / completed / 60)}m ${String(Math.round((totalSecs / completed) % 60)).padStart(2,'0')}s` : '—';
+
   const stats = [
-    { label: "Total Calls",     value: "990",    color: "#0F3D3E", icon: PhoneCall },
-    { label: "Connected",       value: "743",    color: "#1F8A70", icon: PhoneCall },
-    { label: "Avg Duration",    value: "4m 12s", color: "#D4AF37", icon: Clock     },
-    { label: "Failed / No-ans", value: "247",    color: "#DC2626", icon: PhoneOff  },
+    { label: "Total Calls",     value: String(calls.length), color: "#0F3D3E", icon: PhoneCall },
+    { label: "Connected",       value: String(completed),    color: "#1F8A70", icon: PhoneCall },
+    { label: "Avg Duration",    value: avgDur,               color: "#D4AF37", icon: Clock     },
+    { label: "Failed / No-ans", value: String(failed),       color: "#DC2626", icon: PhoneOff  },
   ];
 
   return (
@@ -56,14 +120,34 @@ export default function Calls() {
       <div className="space-y-6">
 
         {/* Header */}
-        <motion.div {...fadeUp(0)}>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="crown-badge">Call Intelligence</div>
+        <motion.div {...fadeUp(0)} className="flex items-start justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="crown-badge">Call Intelligence</div>
+              {usingLive && (
+                <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full"
+                  style={{ background: "rgba(31,138,112,0.08)", color: "#1F8A70", border: "1px solid rgba(31,138,112,0.18)" }}>
+                  Live Data
+                </span>
+              )}
+            </div>
+            <h1 className="text-3xl font-black text-zinc-950 tracking-tight uppercase" style={{ fontFamily: "'Outfit', sans-serif" }}>Calls</h1>
+            <p className="text-sm mt-1.5 font-medium" style={{ color: "#71717a" }}>
+              All outbound AI calls and their outcomes —{" "}
+              <span style={{ color: "#D4AF37", fontWeight: 700 }}>
+                {calls.filter(c => c.status === 'CALLING').length} live call{calls.filter(c => c.status === 'CALLING').length !== 1 ? 's' : ''}
+              </span>{" "}in progress.
+            </p>
           </div>
-          <h1 className="text-3xl font-black text-zinc-950 tracking-tight uppercase" style={{ fontFamily: "'Outfit', sans-serif" }}>Calls</h1>
-          <p className="text-sm mt-1.5 font-medium" style={{ color: "#71717a" }}>
-            All outbound AI calls and their outcomes — <span style={{ color: "#D4AF37", fontWeight: 700 }}>1 live call</span> in progress.
-          </p>
+          <motion.button onClick={fetchCalls} disabled={loading}
+            whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-wider border transition-all"
+            style={{ borderColor: "rgba(212,175,55,0.2)", color: "#94a3b8", backgroundColor: "rgba(212,175,55,0.04)" }}>
+            <motion.div animate={loading ? { rotate: 360 } : { rotate: 0 }} transition={{ duration: 0.7, repeat: loading ? Infinity : 0, ease: 'linear' }}>
+              <RefreshCw className="w-3 h-3" />
+            </motion.div>
+            Refresh
+          </motion.button>
         </motion.div>
 
         {/* Stats row */}

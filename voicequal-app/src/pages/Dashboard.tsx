@@ -1,12 +1,13 @@
 import { motion } from "framer-motion";
 import {
-  Users, PhoneCall, ArrowRight, ArrowUpRight, Flame, Target,
-  BarChart3, Gem, Mic, Plus, Send, RefreshCw, Zap, Sparkles,
+  Users, PhoneCall, ArrowRight, Flame, Target,
+  BarChart3, Gem, Mic, Send, RefreshCw, Zap, Sparkles,
   TrendingUp, Search,
 } from "lucide-react";
 import { useRef, useState, useCallback, useEffect } from "react";
 import { useLocation } from "wouter";
 import DashboardLayout from "../components/DashboardLayout";
+import { triggerCall } from "../api/triggerCall";
 
 // ─── Animation helpers ──────────────────────────────────────────────
 const fadeUp = (delay = 0) => ({
@@ -389,9 +390,13 @@ function QuickActions() {
       await new Promise(r => setTimeout(r, 3300));
       push({ title: 'Sync Complete', sub: '9 leads pushed · 1 skipped (no score)', color: '#1F8A70' });
     } else if (i === 3) {
-      push({ title: 'Batch Starting…', sub: 'Scheduling calls for 6 pending leads', color: '#A67C2E', progress: true });
-      await new Promise(r => setTimeout(r, 3300));
-      push({ title: 'Batch Queued', sub: '6 calls dispatched · Est. 12 min', color: '#1F8A70' });
+      push({ title: 'Batch Starting…', sub: 'Triggering AI calls via n8n…', color: '#A67C2E', progress: true });
+      try {
+        await triggerCall();
+        push({ title: 'Batch Queued', sub: 'n8n workflow triggered · calls dispatched', color: '#1F8A70' });
+      } catch {
+        push({ title: 'Trigger Failed', sub: 'Could not reach n8n webhook', color: '#DC2626' });
+      }
     }
     setTimeout(() => setBusyIdx(null), 500);
   };
