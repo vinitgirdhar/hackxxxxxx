@@ -1,8 +1,11 @@
 import { useLocation } from "wouter";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, UserCheck, PhoneCall, BarChart3,
   Activity, Settings, HelpCircle, LogOut, ChevronRight,
+  Gem, Zap,
 } from "lucide-react";
+import { useEffect, useRef } from "react";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
@@ -13,105 +16,282 @@ const navItems = [
   { icon: Settings,         label: "Settings",  href: "/settings"  },
 ];
 
+// Floating particles for sidebar decoration
+function SidebarParticles() {
+  const types = ['gold', 'emerald', 'diamond'];
+  const particles = Array.from({ length: 10 }).map((_, i) => ({
+    type: types[i % 3],
+    size: 2 + Math.random() * 3,
+    left: `${10 + Math.random() * 80}%`,
+    top: `${5 + Math.random() * 90}%`,
+    duration: 8 + Math.random() * 6,
+    delay: Math.random() * 5,
+    anim: i % 2 === 0 ? 'float-particle' : 'float-particle-reverse',
+  }));
+  return (
+    <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+      {particles.map((p, i) => (
+        <div key={i} className={`particle particle--${p.type}`} style={{
+          width: p.size, height: p.size, left: p.left, top: p.top,
+          animation: `${p.anim} ${p.duration}s ease-in-out ${p.delay}s infinite`,
+          opacity: 0.4,
+        }} />
+      ))}
+    </div>
+  );
+}
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [location, navigate] = useLocation();
+  const mainRef = useRef<HTMLDivElement>(null);
+
+  // Tilt cards on dashboard pages
+  useEffect(() => {
+    const handleCards = () => {
+      document.querySelectorAll<HTMLElement>('.machined-panel, .premium-card').forEach(card => {
+        card.addEventListener('mousemove', (e: MouseEvent) => {
+          const rect = card.getBoundingClientRect();
+          card.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
+          card.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
+        });
+      });
+    };
+    // Small delay so cards are mounted first
+    const t = setTimeout(handleCards, 300);
+    return () => clearTimeout(t);
+  }, [location]);
+
+  const currentLabel = navItems.find(n => location === n.href || location.startsWith(n.href))?.label ?? "Dashboard";
 
   return (
-    <div className="flex min-h-screen admin-bg">
+    <div className="flex min-h-screen dashboard-app-bg">
 
-      {/* Sidebar */}
-      <aside
-        className="fixed left-0 top-0 h-full z-40 flex flex-col transition-all"
+      {/* ── Ambient background orbs — very subtle, pushed to edges ── */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        <div className="ambient-orb ambient-orb--gold" style={{ width: 600, height: 600, top: '-20%', left: '-15%', opacity: 0.06, animationDelay: '0s' }} />
+        <div className="ambient-orb ambient-orb--emerald" style={{ width: 700, height: 700, top: '50%', right: '-20%', opacity: 0.05, animationDelay: '3s' }} />
+        <div className="ambient-orb ambient-orb--moss" style={{ width: 500, height: 500, bottom: '-15%', left: '20%', opacity: 0.04, animationDelay: '6s' }} />
+      </div>
+
+      {/* ── Sidebar ── */}
+      <motion.aside
+        initial={{ x: -20, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        className="fixed left-0 top-0 h-full z-40 flex flex-col"
         style={{
-          width: 240,
-          background: "hsl(180, 65%, 5%)", // Deep midnight teal
-          borderRight: "1px solid rgba(255,255,255,0.05)",
-          boxShadow: "4px 0 24px rgba(0,0,0,0.4)",
+          width: 248,
+          background: "linear-gradient(180deg, hsl(180,65%,4%) 0%, hsl(180,60%,6%) 50%, hsl(175,55%,5%) 100%)",
+          borderRight: "1px solid rgba(212,175,55,0.12)",
+          boxShadow: "4px 0 32px rgba(0,0,0,0.45), inset -1px 0 0 rgba(212,175,55,0.06)",
         }}
       >
+        <SidebarParticles />
+
+        {/* Gold shimmer top line */}
+        <div className="absolute top-0 left-0 right-0 h-[1px] gold-shimmer opacity-60 z-10" />
+
         {/* Logo */}
-        <button
+        <motion.button
           onClick={() => navigate("/")}
-          className="flex items-center gap-2.5 px-6 py-5 border-b hover:opacity-80 transition-opacity text-left w-full"
-          style={{ borderColor: "rgba(255,255,255,0.05)" }}
+          whileHover={{ scale: 1.01 }}
+          whileTap={{ scale: 0.98 }}
+          className="flex items-center gap-3 px-5 py-5 text-left w-full relative z-10"
+          style={{ borderBottom: "1px solid rgba(212,175,55,0.08)" }}
         >
-          <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-sm font-black gold-border"
+          <div className="relative w-9 h-9 rounded-xl flex items-center justify-center shrink-0 gold-border"
             style={{ background: "linear-gradient(135deg,#1F8A70,#0F3D3E)" }}>
-            V
+            <span className="text-white text-sm font-black">V</span>
+            <div className="absolute inset-0 rounded-xl animate-ping" style={{ backgroundColor: "#1F8A70", opacity: 0.06, animationDuration: "3s" }} />
           </div>
-          <span className="text-base font-black text-white tracking-tight uppercase">
-            Voice<span className="text-emerald-400">Qual</span>
-          </span>
-        </button>
+          <div>
+            <div className="text-base font-black text-white tracking-tight uppercase leading-none">
+              Voice<span style={{ color: "#28B893" }}>Qual</span>
+            </div>
+            <div className="text-[9px] font-bold tracking-widest uppercase mt-0.5" style={{ color: "rgba(212,175,55,0.5)" }}>
+              AI Platform
+            </div>
+          </div>
+        </motion.button>
+
+        {/* Live pulse banner */}
+        <div className="mx-3 mt-3 px-3 py-2 rounded-xl flex items-center gap-2.5 relative z-10"
+          style={{ background: "rgba(31,138,112,0.08)", border: "1px solid rgba(31,138,112,0.15)" }}>
+          <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: "#28B893" }} />
+          <span className="text-[9px] font-black uppercase tracking-widest" style={{ color: "#28B893" }}>AI Engine Live</span>
+          <Zap className="w-2.5 h-2.5 ml-auto" style={{ color: "#D4AF37" }} />
+        </div>
 
         {/* Nav */}
-        <nav className="flex-1 px-3 py-5 space-y-1 overflow-y-auto">
-          <div className="text-[10px] font-black uppercase tracking-widest px-3 mb-3 text-zinc-500">
+        <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto relative z-10">
+          <div className="text-[9px] font-black uppercase tracking-[0.2em] px-3 mb-2.5 mt-1" style={{ color: "rgba(212,175,55,0.35)" }}>
             Main Menu
           </div>
-          {navItems.map(({ icon: Icon, label, href }) => {
+          {navItems.map(({ icon: Icon, label, href }, idx) => {
             const isActive = location === href || (href !== "/dashboard" && location.startsWith(href));
             return (
-              <button
+              <motion.button
                 key={href}
                 onClick={() => navigate(href)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${isActive ? 'bg-emerald-900/30 text-emerald-400 border border-emerald-500/20' : 'text-zinc-400 hover:text-white hover:bg-white/5 border border-transparent'}`}
+                initial={{ opacity: 0, x: -12 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.1 + idx * 0.05, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                whileHover={{ x: 3 }}
+                whileTap={{ scale: 0.97 }}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all relative group"
+                style={{
+                  background: isActive
+                    ? "linear-gradient(135deg, rgba(31,138,112,0.2), rgba(31,138,112,0.08))"
+                    : "transparent",
+                  border: isActive ? "1px solid rgba(31,138,112,0.25)" : "1px solid transparent",
+                  color: isActive ? "#28B893" : "rgba(255,255,255,0.45)",
+                  boxShadow: isActive ? "0 2px 12px rgba(31,138,112,0.12), inset 0 1px 0 rgba(255,255,255,0.04)" : "none",
+                }}
               >
-                <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-emerald-400' : 'text-zinc-500'}`} />
-                <span className="flex-1 text-left">{label}</span>
-                {isActive && <ChevronRight className="w-3.5 h-3.5 opacity-60 text-emerald-400" />}
-              </button>
+                {/* Active left bar */}
+                {isActive && (
+                  <motion.div
+                    layoutId="active-bar"
+                    className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full"
+                    style={{ backgroundColor: "#28B893" }}
+                  />
+                )}
+
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-all"
+                  style={{
+                    background: isActive ? "rgba(31,138,112,0.2)" : "rgba(255,255,255,0.04)",
+                    border: isActive ? "1px solid rgba(31,138,112,0.3)" : "1px solid rgba(255,255,255,0.06)",
+                  }}>
+                  <Icon className="w-3.5 h-3.5" style={{ color: isActive ? "#28B893" : "rgba(255,255,255,0.35)" }} />
+                </div>
+                <span className="flex-1 text-left font-bold text-[13px]">{label}</span>
+                {isActive && <ChevronRight className="w-3 h-3 opacity-50" style={{ color: "#28B893" }} />}
+
+                {/* Hover glow */}
+                {!isActive && (
+                  <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity"
+                    style={{ background: "rgba(255,255,255,0.03)" }} />
+                )}
+              </motion.button>
             );
           })}
 
-          <div className="text-[10px] font-black uppercase tracking-widest px-3 mt-6 mb-3 text-zinc-500">
+          <div className="text-[9px] font-black uppercase tracking-[0.2em] px-3 mt-6 mb-2.5" style={{ color: "rgba(212,175,55,0.35)" }}>
             Support
           </div>
-          <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all hover:bg-white/5 text-zinc-400 hover:text-white border border-transparent">
-            <HelpCircle className="w-4 h-4 shrink-0 text-zinc-500" /> Help & Docs
-          </button>
+          <motion.button
+            whileHover={{ x: 3 }}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all border border-transparent group"
+            style={{ color: "rgba(255,255,255,0.35)" }}
+          >
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+              <HelpCircle className="w-3.5 h-3.5" style={{ color: "rgba(255,255,255,0.3)" }} />
+            </div>
+            <span className="font-bold text-[13px]">Help & Docs</span>
+          </motion.button>
         </nav>
 
+        {/* Stat footer */}
+        <div className="mx-3 mb-3 px-3 py-2.5 rounded-xl relative z-10"
+          style={{ background: "rgba(212,175,55,0.05)", border: "1px solid rgba(212,175,55,0.1)" }}>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-[9px] font-black uppercase tracking-widest" style={{ color: "rgba(212,175,55,0.5)" }}>Today's Calls</div>
+              <div className="text-base font-black text-white mt-0.5">990 <span className="text-[9px] font-medium" style={{ color: "rgba(31,138,112,0.8)" }}>↑ 12%</span></div>
+            </div>
+            <Gem className="w-4 h-4" style={{ color: "rgba(212,175,55,0.4)" }} />
+          </div>
+        </div>
+
         {/* User */}
-        <div className="px-3 py-4 border-t border-white/5">
-          <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 cursor-pointer group">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 gold-border"
+        <div className="px-3 py-3 relative z-10" style={{ borderTop: "1px solid rgba(212,175,55,0.08)" }}>
+          <motion.div
+            whileHover={{ scale: 1.01 }}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer group transition-all"
+            style={{ border: "1px solid rgba(255,255,255,0.04)" }}
+          >
+            <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-black shrink-0 gold-border"
               style={{ background: "linear-gradient(135deg,#D4AF37,#A67C2E)" }}>
               VQ
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-xs font-bold text-white truncate">Admin User</div>
-              <div className="text-[10px] text-zinc-400 truncate">admin@voicequal.ai</div>
+              <div className="text-[9px] truncate" style={{ color: "rgba(255,255,255,0.3)" }}>admin@voicequal.ai</div>
             </div>
-            <LogOut className="w-3.5 h-3.5 text-zinc-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-          </div>
+            <LogOut className="w-3.5 h-3.5 opacity-0 group-hover:opacity-60 transition-opacity" style={{ color: "#94a3b8" }} />
+          </motion.div>
         </div>
-      </aside>
+      </motion.aside>
 
-      {/* Page area */}
-      <div className="flex-1 flex flex-col" style={{ marginLeft: 240 }}>
+      {/* ── Page Area ── */}
+      <div className="flex-1 flex flex-col relative z-10" style={{ marginLeft: 248 }}>
+
         {/* Topbar */}
-        <header
+        <motion.header
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
           className="sticky top-0 z-30 flex items-center justify-between px-8 h-14"
           style={{
-            background: "rgba(255,255,255,0.85)",
-            backdropFilter: "blur(12px)",
-            borderBottom: "1px solid rgba(0,0,0,0.06)",
+            background: "rgba(255,255,255,0.97)",
+            backdropFilter: "blur(16px)",
+            WebkitBackdropFilter: "blur(16px)",
+            borderBottom: "1px solid rgba(0,0,0,0.07)",
+            boxShadow: "0 1px 0 rgba(212,175,55,0.12), 0 2px 12px rgba(0,0,0,0.04)",
           }}
         >
-          <div className="text-sm" style={{ color: "#71717a" }}>
-            <span className="font-bold" style={{ color: "#09090b" }}>
-              {navItems.find(n => location === n.href || location.startsWith(n.href))?.label ?? "Dashboard"}
-            </span>
+          {/* Left: breadcrumb */}
+          <div className="flex items-center gap-2.5">
+            <div className="w-5 h-5 rounded-md flex items-center justify-center"
+              style={{ background: "rgba(31,138,112,0.08)", border: "1px solid rgba(31,138,112,0.15)" }}>
+              <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#1F8A70" }} />
+            </div>
+            <span className="text-xs font-black uppercase tracking-widest" style={{ color: "#94a3b8" }}>VoiceQual</span>
+            <ChevronRight className="w-3.5 h-3.5" style={{ color: "#cbd5e1" }} />
+            <AnimatePresence mode="wait">
+              <motion.span
+                key={currentLabel}
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.2 }}
+                className="text-sm font-black tracking-tight"
+                style={{ color: "#09090b" }}
+              >
+                {currentLabel}
+              </motion.span>
+            </AnimatePresence>
           </div>
-          <div className="flex items-center gap-2 text-xs px-3 py-2 rounded-xl bg-white border depth-shadow-sm"
-            style={{ color: "#71717a", borderColor: "rgba(0,0,0,0.07)" }}>
-            <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: "#1F8A70" }} />
-            Live
-          </div>
-        </header>
 
-        <main className="flex-1 px-8 py-8 overflow-y-auto">
+          {/* Right: status badges */}
+          <div className="flex items-center gap-3">
+            {/* Live indicator */}
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl"
+              style={{ background: "rgba(31,138,112,0.06)", border: "1px solid rgba(31,138,112,0.15)" }}>
+              <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: "#1F8A70" }} />
+              <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: "#1F8A70" }}>Live</span>
+            </div>
+
+            {/* Hot leads pulse */}
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl"
+              style={{ background: "rgba(212,175,55,0.06)", border: "1px solid rgba(212,175,55,0.15)" }}>
+              <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: "#A67C2E" }}>312 Hot</span>
+              <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: "#D4AF37" }} />
+            </div>
+
+            {/* Avatar */}
+            <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-black gold-border cursor-pointer hover:scale-105 transition-transform"
+              style={{ background: "linear-gradient(135deg,#1F8A70,#0F3D3E)" }}>
+              A
+            </div>
+          </div>
+        </motion.header>
+
+        {/* Gold shimmer under topbar */}
+        <div className="h-[1px] gold-shimmer opacity-40 sticky top-14 z-30" />
+
+        <main ref={mainRef} className="flex-1 px-8 py-8 overflow-y-auto">
           {children}
         </main>
       </div>

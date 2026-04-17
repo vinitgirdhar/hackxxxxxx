@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useLocation } from "wouter";
-import { motion, useInView, useSpring, useMotionValue, useTransform } from "framer-motion";
+import { motion, useInView, useSpring, useMotionValue, useTransform, useScroll } from "framer-motion";
+import { PhoneCall, Zap, Target, Users, Lightbulb, Check } from "lucide-react";
 
 // ── Framer Motion Variants ──
 const fadeUp = { hidden: { opacity: 0, y: 60 }, visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] } } };
@@ -8,6 +9,40 @@ const fadeScale = { hidden: { opacity: 0, scale: 0.9 }, visible: { opacity: 1, s
 const stagger = { hidden: { opacity: 1 }, visible: { opacity: 1, transition: { staggerChildren: 0.12 } } };
 const slideLeft = { hidden: { opacity: 0, x: -60 }, visible: { opacity: 1, x: 0, transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] } } };
 const slideRight = { hidden: { opacity: 0, x: 60 }, visible: { opacity: 1, x: 0, transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] } } };
+
+// ── Scroll Progress Bar ──
+function ScrollProgressBar() {
+  const { scrollYProgress } = useScroll();
+  const scaleX = useSpring(scrollYProgress, { stiffness: 100, damping: 30, restDelta: 0.001 });
+  return (
+    <motion.div
+      style={{
+        scaleX,
+        transformOrigin: '0%',
+        background: 'linear-gradient(90deg, #1F8A70, #D4AF37, #28B893)',
+        position: 'fixed', top: 0, left: 0, right: 0,
+        height: 2, zIndex: 9999, pointerEvents: 'none',
+      }}
+    />
+  );
+}
+
+// ── 3D Scroll Card ──
+function ScrollReveal3D({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const isInView = useInView(ref, { once: true, margin: '-80px' });
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 60, rotateX: 15, scale: 0.95 }}
+      animate={isInView ? { opacity: 1, y: 0, rotateX: 0, scale: 1 } : {}}
+      transition={{ duration: 0.8, delay, ease: [0.16, 1, 0.3, 1] }}
+      style={{ transformPerspective: 1000 }}
+    >
+      {children}
+    </motion.div>
+  );
+}
 
 // ── Animated Counter Component ──
 function AnimatedValue({ value, suffix = '' }: { value: number; suffix?: string }) {
@@ -30,6 +65,7 @@ function AnimatedValue({ value, suffix = '' }: { value: number; suffix?: string 
 }
 
 // ── Waveform Component ──
+const WAVE_HEIGHTS = [45, 80, 60, 95, 50, 70, 40, 85, 55];
 function Waveform({ bars = 5, color = 'var(--emerald-teal)' }: { bars?: number; color?: string }) {
   return (
     <div className="flex items-end gap-[2px] h-5">
@@ -39,7 +75,7 @@ function Waveform({ bars = 5, color = 'var(--emerald-teal)' }: { bars?: number; 
           className="waveform-bar"
           style={{
             background: color,
-            height: `${30 + Math.random() * 70}%`,
+            height: `${WAVE_HEIGHTS[i % WAVE_HEIGHTS.length]}%`,
             animationDelay: `${i * 0.12}s`,
           }}
         />
@@ -98,6 +134,15 @@ function AmbientOrbs() {
 export default function LandingPage() {
   const [, navigate] = useLocation();
   const heroRef = useRef<HTMLDivElement>(null);
+
+  // ── Scroll-driven hero parallax ──
+  const { scrollY } = useScroll();
+  const heroY = useTransform(scrollY, [0, 600], [0, -120]);
+  const heroOpacity = useTransform(scrollY, [0, 400], [1, 0]);
+  const heroScale = useTransform(scrollY, [0, 500], [1, 0.92]);
+  const heroRingRotate = useTransform(scrollY, [0, 800], [0, 45]);
+  const statsY = useTransform(scrollY, [200, 700], [40, 0]);
+  const statsOpacity = useTransform(scrollY, [200, 500], [0, 1]);
 
   useEffect(() => {
     // Spotlight on machined panels
@@ -228,6 +273,7 @@ export default function LandingPage() {
 
   return (
     <div className="text-zinc-800">
+      <ScrollProgressBar />
       <div id="cursor"></div>
       <div id="cursor-follower"></div>
 
@@ -258,8 +304,8 @@ export default function LandingPage() {
           <div className="hidden md:flex gap-10 text-xs font-bold uppercase tracking-widest text-zinc-500">
             <a href="#features-section" className="hover-underline hover:text-zinc-950 transition-colors">Platform</a>
             <a href="#features-section" className="hover-underline hover:text-zinc-950 transition-colors">Features</a>
-            <a href="#" className="hover-underline hover:text-zinc-950 transition-colors">Pricing</a>
-            <a href="#" className="hover-underline hover:text-zinc-950 transition-colors">Docs</a>
+            <a href="#pricing-section" className="hover-underline hover:text-zinc-950 transition-colors">Pricing</a>
+            <a href="#cta-section" className="hover-underline hover:text-zinc-950 transition-colors">Get Started</a>
           </div>
           <div className="flex items-center gap-4">
             <a href="#" className="hidden md:block text-xs font-bold uppercase tracking-widest text-zinc-600 hover:text-zinc-950 transition-colors hover-underline">Sign In</a>
@@ -280,12 +326,13 @@ export default function LandingPage() {
           <div className="blob blob--emerald absolute -bottom-20 -right-32 w-80 h-80 opacity-20 z-0" style={{ animationDelay: '5s' }} />
 
           <div className="grid lg:grid-cols-2 gap-12 items-center w-full relative z-10">
+            {/* Hero text — scrolls up faster (parallax) */}
             <motion.div
               initial="hidden"
               animate="visible"
               variants={stagger}
-              className="max-w-2xl parallax-layer"
-              data-speed="0.05"
+              style={{ y: heroY, opacity: heroOpacity }}
+              className="max-w-2xl"
             >
               <motion.h1 variants={fadeUp} className="text-6xl md:text-[80px] font-black text-zinc-950 tracking-tighter leading-[0.95] mb-8 uppercase overflow-hidden">
                 <span>Qualify</span><br/>
@@ -301,10 +348,12 @@ export default function LandingPage() {
                   className="magnetic-btn press-effect bg-zinc-950 text-white px-8 py-4 rounded-xl font-black text-sm uppercase tracking-widest shadow-xl hover:bg-amber-400 transition-all duration-300 hover:shadow-[0_0_30px_rgba(212,175,55,0.3)]">
                   <span className="magnetic-btn-inner flex items-center gap-2">Open Dashboard</span>
                 </button>
-                <button className="magnetic-btn press-effect machined-panel text-zinc-950 px-8 py-4 rounded-xl font-black text-sm uppercase tracking-widest hover:bg-white transition-colors">
+                <button
+                  onClick={() => document.getElementById('features-section')?.scrollIntoView({ behavior: 'smooth' })}
+                  className="magnetic-btn press-effect machined-panel text-zinc-950 px-8 py-4 rounded-xl font-black text-sm uppercase tracking-widest hover:bg-white transition-colors">
                   <span className="magnetic-btn-inner flex items-center gap-2">
                     <Waveform bars={4} color="var(--emerald-teal)" />
-                    Watch Demo
+                    See How It Works
                   </span>
                 </button>
               </motion.div>
@@ -326,8 +375,12 @@ export default function LandingPage() {
               </motion.div>
             </motion.div>
 
-            {/* 3D Hero Stage */}
-            <div ref={heroRef} className="reveal-3d relative h-[500px] flex items-center justify-center">
+            {/* 3D Hero Stage — scales down + fades on scroll */}
+            <motion.div
+              ref={heroRef}
+              style={{ scale: heroScale, opacity: heroOpacity }}
+              className="reveal-3d relative h-[500px] flex items-center justify-center"
+            >
               <div className="relative w-full h-full flex items-center justify-center">
                 {/* Center orb */}
                 <motion.div
@@ -380,7 +433,7 @@ export default function LandingPage() {
                     <div className="absolute right-0 top-1/2 w-8 h-4 bg-zinc-400 translate-x-1/2 -translate-y-1/2 rounded-sm shadow-md"></div>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </div>
         </section>
 
@@ -422,34 +475,30 @@ export default function LandingPage() {
             <h2 className="text-4xl md:text-6xl font-black text-zinc-950 tracking-tighter mb-4 uppercase">Measure the impact.</h2>
             <p className="text-lg text-zinc-500 font-medium">Stop guessing. See exactly how automated qualification accelerates your pipeline.</p>
           </motion.div>
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-50px" }}
-            variants={stagger}
-            className="grid grid-cols-1 md:grid-cols-3 gap-6"
-          >
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               { value: 92, suffix: '%', title: 'Lead qualification accuracy', sub: 'AI-scored lead matches', by: 'Apex SaaS', color: 'text-emerald-600' },
               { value: 10, suffix: '×', title: 'More calls per day', sub: 'vs. manual SDR teams', by: 'TechFlow', color: 'text-amber-400' },
               { value: 78, suffix: '%', title: 'Lower cost per qualified lead', sub: 'Automated conversations', by: 'GrowthEdge', color: 'text-emerald-600' },
             ].map((s, i) => (
-              <motion.div key={i} variants={fadeScale} className="tilt-card">
-                <div className="tilt-card-inner machined-panel hover-lift p-8 flex flex-col justify-between h-56 relative overflow-hidden">
-                  <div className="tilt-shine" />
-                  <div className="tilt-gold-shine" />
-                  <div>
-                    <div className={`text-7xl font-black tracking-tighter leading-none mb-4 ${s.color}`}>
-                      <AnimatedValue value={s.value} suffix={s.suffix} />
+              <ScrollReveal3D key={i} delay={i * 0.15}>
+                <div className="tilt-card">
+                  <div className="tilt-card-inner machined-panel hover-lift p-8 flex flex-col justify-between h-56 relative overflow-hidden">
+                    <div className="tilt-shine" />
+                    <div className="tilt-gold-shine" />
+                    <div>
+                      <div className={`text-7xl font-black tracking-tighter leading-none mb-4 ${s.color}`}>
+                        <AnimatedValue value={s.value} suffix={s.suffix} />
+                      </div>
+                      <h3 className="text-lg text-zinc-900 font-bold leading-tight">{s.title}</h3>
+                      <p className="text-sm text-zinc-500 font-medium mt-1">{s.sub}</p>
                     </div>
-                    <h3 className="text-lg text-zinc-900 font-bold leading-tight">{s.title}</h3>
-                    <p className="text-sm text-zinc-500 font-medium mt-1">{s.sub}</p>
+                    <div className="mt-5 text-sm font-bold text-zinc-400">{s.by}</div>
                   </div>
-                  <div className="mt-5 text-sm font-bold text-zinc-400">{s.by}</div>
                 </div>
-              </motion.div>
+              </ScrollReveal3D>
             ))}
-          </motion.div>
+          </div>
         </section>
 
         {/* Feature Cards */}
@@ -635,15 +684,21 @@ export default function LandingPage() {
                     </motion.h2>
                     <motion.ul variants={stagger} className="space-y-6">
                         <motion.li variants={slideLeft} className="flex items-start gap-4">
-                            <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100 text-xl">📞</div>
+                            <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0 border border-emerald-100">
+                              <PhoneCall className="w-5 h-5 text-emerald-600" strokeWidth={1.75} />
+                            </div>
                             <span className="text-lg text-zinc-600 font-medium pt-1">AI calls leads with natural, human-like conversations</span>
                         </motion.li>
                         <motion.li variants={slideLeft} className="flex items-start gap-4">
-                            <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100 text-xl">⚡</div>
+                            <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0 border border-emerald-100">
+                              <Zap className="w-5 h-5 text-emerald-600" strokeWidth={1.75} />
+                            </div>
                             <span className="text-lg text-zinc-600 font-medium pt-1">Qualify and score leads in real-time during each call</span>
                         </motion.li>
                         <motion.li variants={slideLeft} className="flex items-start gap-4">
-                            <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100 text-xl">🎯</div>
+                            <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0 border border-emerald-100">
+                              <Target className="w-5 h-5 text-emerald-600" strokeWidth={1.75} />
+                            </div>
                             <span className="text-lg text-zinc-600 font-medium pt-1">Deliver scored leads with transcripts to your CRM</span>
                         </motion.li>
                     </motion.ul>
@@ -677,36 +732,74 @@ export default function LandingPage() {
                             <div className="absolute inset-0 pointer-events-none opacity-20 mix-blend-overlay" style={{background: 'repeating-linear-gradient(0deg, #000, #000 2px, transparent 2px, transparent 4px)'}}></div>
                             <div className="absolute inset-0 bg-emerald-500/5 mix-blend-screen pointer-events-none animate-pulse" style={{animationDuration: '4s'}}></div>
 
-                            <div className="flex items-center gap-2 text-xs font-bold text-zinc-500 mb-4 uppercase tracking-widest relative z-20 mockup-child mockup-child-1">
-                                📞 Stream / Acme Connect
-                            </div>
-
-                            <div className="flex-1 overflow-hidden flex flex-col gap-6 relative z-20">
-                                {/* Insight 1 */}
-                                <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl p-5 scan-card mockup-child mockup-child-2">
-                                    <div className="flex items-center gap-2 text-xs font-bold text-emerald-400 mb-2 uppercase tracking-widest">👥 Account Map</div>
-                                    <p className="text-sm text-zinc-400 font-medium leading-relaxed mb-1 flex items-center flex-wrap gap-1">
-                                        <strong className="text-white type-1">Root Admin</strong> <span className="fade-in-delay-1">&middot; Core Systems, Acme</span>
-                                    </p>
-                                    <p className="text-sm text-zinc-500 font-medium leading-relaxed fade-in-delay-1">
-                                        Admin handles primary logic for experience layer. IP localized to US-East.
-                                    </p>
+                            {/* Active call header */}
+                            <div className="flex items-center justify-between mb-5 relative z-20 mockup-child mockup-child-1">
+                                <div className="flex items-center gap-2 text-xs font-bold text-zinc-500 uppercase tracking-widest">
+                                    <PhoneCall className="w-3 h-3 text-emerald-400" /> Live Call Session
                                 </div>
-
-                                {/* Insight 2 */}
-                                <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl p-5 scan-card mockup-child mockup-child-3">
-                                    <div className="flex items-center gap-2 text-xs font-bold text-amber-400 mb-2 uppercase tracking-widest">💡 Signal Analysis</div>
-                                    <p className="text-sm text-white font-bold mb-1 type-2">Signal processed &amp; sequence initiated</p>
-                                    <p className="text-sm text-zinc-500 font-medium leading-relaxed fade-in-delay-2">
-                                        Acme established handshake and requested payload limits. Deploy override configs.
-                                    </p>
+                                <div className="flex items-center gap-1.5 text-[10px] font-black text-emerald-400 uppercase tracking-widest">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block" />
+                                    Recording
                                 </div>
                             </div>
 
-                            {/* Bottom Button */}
-                            <div className="relative z-20 mt-6 mockup-child mockup-child-4">
-                                <button className="magnetic-btn press-effect w-full bg-emerald-950/40 border border-emerald-900 hover:bg-emerald-900/60 transition-colors py-4 rounded-xl flex items-center justify-center gap-2 text-sm font-bold text-emerald-400 shadow-inner uppercase tracking-widest">
-                                    <span className="magnetic-btn-inner flex items-center gap-2">🔍 Query Signals</span>
+                            <div className="flex-1 overflow-hidden flex flex-col gap-4 relative z-20">
+
+                                {/* Lead profile card */}
+                                <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl p-4 scan-card mockup-child mockup-child-2">
+                                    <div className="flex items-center gap-2 text-[10px] font-bold text-emerald-400 mb-3 uppercase tracking-widest">
+                                        <Users className="w-3 h-3" /> Lead Profile
+                                    </div>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <div>
+                                            <p className="text-sm text-white font-bold type-1">Priya Menon</p>
+                                            <p className="text-[11px] text-zinc-500 font-medium fade-in-delay-1">VP Sales · Infosys Ltd · Mumbai</p>
+                                        </div>
+                                        {/* BANT score */}
+                                        <div className="flex flex-col items-end">
+                                            <span className="text-xl font-black text-emerald-400 leading-none">9.1</span>
+                                            <span className="text-[9px] text-zinc-600 uppercase tracking-widest">BANT Score</span>
+                                        </div>
+                                    </div>
+                                    {/* BANT bars */}
+                                    <div className="grid grid-cols-4 gap-2 mt-3">
+                                        {[
+                                            { label: 'Budget', val: 92, color: '#34d399' },
+                                            { label: 'Authority', val: 88, color: '#34d399' },
+                                            { label: 'Need', val: 95, color: '#34d399' },
+                                            { label: 'Timeline', val: 78, color: '#fbbf24' },
+                                        ].map(b => (
+                                            <div key={b.label}>
+                                                <div className="text-[8px] text-zinc-600 uppercase tracking-wider mb-1">{b.label}</div>
+                                                <div className="h-1 rounded-full bg-zinc-800 overflow-hidden">
+                                                    <div className="h-full rounded-full transition-all" style={{ width: `${b.val}%`, backgroundColor: b.color }} />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Sentiment & AI insight */}
+                                <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl p-4 scan-card mockup-child mockup-child-3">
+                                    <div className="flex items-center gap-2 text-[10px] font-bold text-amber-400 mb-2 uppercase tracking-widest">
+                                        <Lightbulb className="w-3 h-3" /> AI Sentiment Analysis
+                                    </div>
+                                    <p className="text-sm text-white font-bold mb-1 type-2">"Interested in Q3 rollout — budget confirmed"</p>
+                                    <p className="text-[11px] text-zinc-500 font-medium leading-relaxed fade-in-delay-2">
+                                        Positive intent detected. Decision-maker engaged. Recommend immediate CRM push.
+                                    </p>
+                                    <div className="flex items-center gap-3 mt-3">
+                                        <span className="text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest" style={{ background: 'rgba(52,211,153,0.12)', color: '#34d399', border: '1px solid rgba(52,211,153,0.25)' }}>HOT Lead</span>
+                                        <span className="text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest" style={{ background: 'rgba(251,191,36,0.1)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.2)' }}>Positive Tone</span>
+                                        <span className="text-[9px] text-zinc-600 ml-auto">2m 47s</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* CTA button */}
+                            <div className="relative z-20 mt-4 mockup-child mockup-child-4">
+                                <button className="magnetic-btn press-effect w-full bg-emerald-950/40 border border-emerald-900 hover:bg-emerald-900/60 transition-colors py-3.5 rounded-xl flex items-center justify-center gap-2 text-sm font-bold text-emerald-400 shadow-inner uppercase tracking-widest">
+                                    <span className="magnetic-btn-inner flex items-center gap-2"><Target className="w-4 h-4" /> Qualify &amp; Push to CRM</span>
                                 </button>
                             </div>
                         </div>
@@ -752,8 +845,7 @@ export default function LandingPage() {
         </section>
 
         {/* Capabilities (Bento 2) */}
-        <section className="py-32 px-6 max-w-7xl mx-auto relative z-10 perspective-container">
-            {/* Decorative elements */}
+        <section className="py-32 px-6 max-w-7xl mx-auto relative z-10" id="stack-section">
             <div className="absolute top-20 right-0 w-40 h-40 rotating-ring opacity-20 pointer-events-none" />
             <div className="blob blob--gold absolute -top-20 right-0 w-64 h-64 opacity-15 z-0" style={{ animationDelay: '3s' }} />
 
@@ -762,8 +854,7 @@ export default function LandingPage() {
               whileInView="visible"
               viewport={{ once: true, margin: "-50px" }}
               variants={fadeUp}
-              className="mb-16 flex flex-col md:flex-row md:items-end justify-between gap-8 parallax-layer relative z-10"
-              data-speed="0.02"
+              className="mb-16 flex flex-col md:flex-row md:items-end justify-between gap-8 relative z-10"
             >
                 <div className="max-w-2xl">
                     <div className="ornament-line text-xs font-black text-amber-500 uppercase tracking-widest mb-4">The Stack</div>
@@ -772,35 +863,31 @@ export default function LandingPage() {
                 </div>
             </motion.div>
 
-            <motion.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-50px" }}
-              variants={stagger}
-              className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10"
-            >
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
                 {[
-                  { accent: 'text-amber-500', title: 'Automated Outbound Calling', sub: '< 5 min avg first call', desc: 'Reach every lead within minutes. Handles scheduling, retries, and call windows—zero manual dialing.' },
-                  { accent: 'text-emerald-600', title: 'BANT Qualification Scoring', sub: '4 signals per call', desc: 'Each call is scored across Budget, Authority, Need, and Timeline with full audit trails.' },
-                  { accent: 'text-amber-500', title: 'CRM Sync & Webhooks', sub: '< 1 sec sync latency', desc: 'Push qualified lead data directly to Salesforce, HubSpot, or Pipedrive the moment a call completes.' },
-                  { accent: 'text-emerald-600', title: 'Pipeline Analytics', sub: 'Real-time dashboards', desc: 'Track conversion rates, call volumes, and qualification trends. Understand exactly where leads drop off.' },
-                  { accent: 'text-amber-500', title: 'Configurable Rules', sub: 'No-code configuration', desc: 'Set calling windows, retry delays, score thresholds, and SLA targets through a simple admin interface.' },
-                  { accent: 'text-emerald-600', title: 'Compliance Built In', sub: 'SOC 2 Type II certified', desc: 'DND checks, consent management, call time restrictions, and auto-deletion of recordings after 90 days.' },
+                  { accent: 'text-amber-500', accentBg: 'rgba(212,175,55,0.04)', title: 'Automated Outbound Calling', sub: '< 5 min avg first call', desc: 'Reach every lead within minutes. Handles scheduling, retries, and call windows—zero manual dialing.' },
+                  { accent: 'text-emerald-600', accentBg: 'rgba(31,138,112,0.05)', title: 'BANT Qualification Scoring', sub: '4 signals per call', desc: 'Each call is scored across Budget, Authority, Need, and Timeline with full audit trails.' },
+                  { accent: 'text-amber-500', accentBg: 'rgba(212,175,55,0.04)', title: 'CRM Sync & Webhooks', sub: '< 1 sec sync latency', desc: 'Push qualified lead data directly to Salesforce, HubSpot, or Pipedrive the moment a call completes.' },
+                  { accent: 'text-emerald-600', accentBg: 'rgba(31,138,112,0.05)', title: 'Pipeline Analytics', sub: 'Real-time dashboards', desc: 'Track conversion rates, call volumes, and qualification trends. Understand exactly where leads drop off.' },
+                  { accent: 'text-amber-500', accentBg: 'rgba(212,175,55,0.04)', title: 'Configurable Rules', sub: 'No-code configuration', desc: 'Set calling windows, retry delays, score thresholds, and SLA targets through a simple admin interface.' },
+                  { accent: 'text-emerald-600', accentBg: 'rgba(31,138,112,0.05)', title: 'Compliance Built In', sub: 'SOC 2 Type II certified', desc: 'DND checks, consent management, call time restrictions, and auto-deletion of recordings after 90 days.' },
                 ].map((item, i) => (
-                  <motion.div key={i} variants={fadeUp} className="tilt-card">
-                    <div className="tilt-card-inner machined-panel hover-lift p-8 group flex flex-col relative overflow-hidden">
-                      <div className="tilt-shine" />
-                      <div className={`text-xs font-black ${item.accent} uppercase tracking-widest mb-4`}>{item.sub}</div>
-                      <h3 className="text-2xl font-black text-zinc-950 tracking-tighter mb-2 uppercase">{item.title}</h3>
-                      <p className="text-zinc-600 font-medium text-sm leading-relaxed">{item.desc}</p>
+                  <ScrollReveal3D key={i} delay={i * 0.1}>
+                    <div className="tilt-card h-full">
+                      <div className="tilt-card-inner machined-panel hover-lift p-8 group flex flex-col relative overflow-hidden" style={{ background: `linear-gradient(145deg, #ffffff, ${item.accentBg})` }}>
+                        <div className="tilt-shine" />
+                        <div className={`text-xs font-black ${item.accent} uppercase tracking-widest mb-4`}>{item.sub}</div>
+                        <h3 className="text-2xl font-black text-zinc-950 tracking-tighter mb-2 uppercase">{item.title}</h3>
+                        <p className="text-zinc-600 font-medium text-sm leading-relaxed">{item.desc}</p>
+                      </div>
                     </div>
-                  </motion.div>
+                  </ScrollReveal3D>
                 ))}
-            </motion.div>
+            </div>
         </section>
 
         {/* Pricing */}
-        <section className="py-32 px-6 max-w-7xl mx-auto relative z-10">
+        <section className="py-32 px-6 max-w-7xl mx-auto relative z-10" id="pricing-section">
           {/* Decorative */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-48 rotating-ring-reverse opacity-15 pointer-events-none" />
 
@@ -832,11 +919,15 @@ export default function LandingPage() {
                 <ul className="space-y-4 mb-10 flex-1">
                   {['Standard AI Voice Models', 'Real-time BANT Scoring', 'Native CRM Integrations', 'Basic Pipeline Analytics'].map(f => (
                     <li key={f} className="flex items-center gap-3 text-sm font-bold text-zinc-700">
-                      <span className="text-emerald-500 text-xl">✓</span> {f}
+                      <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: 'rgba(31,138,112,0.12)', border: '1px solid rgba(31,138,112,0.25)' }}>
+                        <Check className="w-3 h-3" style={{ color: '#1F8A70' }} strokeWidth={2.5} />
+                      </div> {f}
                     </li>
                   ))}
                 </ul>
-                <button className="magnetic-btn press-effect w-full bg-white text-zinc-950 px-8 py-4 rounded-xl font-black text-sm uppercase tracking-widest border border-zinc-300 hover:bg-zinc-100 transition-colors">
+                <button
+                  onClick={() => document.getElementById('cta-section')?.scrollIntoView({ behavior: 'smooth' })}
+                  className="magnetic-btn press-effect w-full bg-white text-zinc-950 px-8 py-4 rounded-xl font-black text-sm uppercase tracking-widest border border-zinc-300 hover:bg-zinc-50 hover:border-amber-400/50 transition-colors">
                   <span className="magnetic-btn-inner">Start 14-Day Trial</span>
                 </button>
               </div>
@@ -856,20 +947,24 @@ export default function LandingPage() {
                 <ul className="space-y-4 mb-10 flex-1 relative z-10">
                   {['Custom Voice Cloning', 'Advanced Routing Logic', 'SOC 2 Type II Compliance', 'Dedicated Success Manager'].map(f => (
                     <li key={f} className="flex items-center gap-3 text-sm font-bold text-zinc-300">
-                      <span className="text-amber-400 text-xl">✓</span> {f}
+                      <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: 'rgba(212,175,55,0.15)', border: '1px solid rgba(212,175,55,0.35)' }}>
+                        <Check className="w-3 h-3" style={{ color: '#D4AF37' }} strokeWidth={2.5} />
+                      </div> {f}
                     </li>
                   ))}
                 </ul>
-                <button className="magnetic-btn press-effect w-full bg-emerald-500 text-white px-8 py-4 rounded-xl font-black text-sm uppercase tracking-widest hover:bg-emerald-400 transition-colors relative z-10 hover:shadow-[0_0_30px_rgba(16,185,129,0.3)]">
+                <a
+                  href="mailto:sales@voicequal.ai"
+                  className="magnetic-btn press-effect w-full bg-emerald-500 text-white px-8 py-4 rounded-xl font-black text-sm uppercase tracking-widest hover:bg-emerald-400 transition-colors relative z-10 text-center hover:shadow-[0_0_30px_rgba(16,185,129,0.3)] flex items-center justify-center">
                   <span className="magnetic-btn-inner">Contact Sales</span>
-                </button>
+                </a>
               </div>
             </motion.div>
           </motion.div>
         </section>
 
         {/* CTA */}
-        <section className="py-32 px-6 relative z-10 mb-10">
+        <section className="py-32 px-6 relative z-10 mb-10" id="cta-section">
           {/* Decorative blobs */}
           <div className="blob blob--gold absolute top-10 left-10 w-60 h-60 opacity-15 z-0" />
           <div className="blob blob--emerald absolute bottom-10 right-10 w-48 h-48 opacity-10 z-0" style={{ animationDelay: '4s' }} />
@@ -903,9 +998,11 @@ export default function LandingPage() {
                   className="magnetic-btn press-effect bg-zinc-950 text-white px-10 py-5 rounded-xl font-black text-xs uppercase tracking-widest shadow-xl hover:bg-amber-400 transition-all duration-300 hover:shadow-[0_0_40px_rgba(212,175,55,0.3)]">
                   <span className="magnetic-btn-inner">Open Dashboard</span>
                 </button>
-                <button className="magnetic-btn press-effect bg-transparent border-2 border-zinc-300 text-zinc-900 px-10 py-5 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-zinc-100 hover:border-amber-400/50 transition-all duration-300">
-                  <span className="magnetic-btn-inner">Book a demo</span>
-                </button>
+                <a
+                  href="mailto:sales@voicequal.ai"
+                  className="magnetic-btn press-effect bg-transparent border-2 border-zinc-300 text-zinc-900 px-10 py-5 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-zinc-100 hover:border-amber-400/50 transition-all duration-300 flex items-center justify-center">
+                  <span className="magnetic-btn-inner">Book a Demo</span>
+                </a>
               </div>
             </motion.div>
           </div>
