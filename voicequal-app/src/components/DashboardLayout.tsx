@@ -244,11 +244,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         >
           {/* Left: breadcrumb */}
           <div className="flex items-center gap-2.5">
-            <div className="w-5 h-5 rounded-md flex items-center justify-center"
-              style={{ background: "rgba(31,138,112,0.08)", border: "1px solid rgba(31,138,112,0.15)" }}>
-              <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#1F8A70" }} />
-            </div>
-            <span className="text-xs font-black uppercase tracking-widest" style={{ color: "#94a3b8" }}>VoiceQual</span>
+            <button onClick={() => window.location.reload()} className="flex items-center gap-2.5 hover:opacity-80 transition-opacity cursor-pointer">
+              <div className="w-5 h-5 rounded-md flex items-center justify-center"
+                style={{ background: "rgba(31,138,112,0.08)", border: "1px solid rgba(31,138,112,0.15)" }}>
+                <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#1F8A70" }} />
+              </div>
+              <span className="text-xs font-black uppercase tracking-widest" style={{ color: "#94a3b8" }}>VoiceQual</span>
+            </button>
             <ChevronRight className="w-3.5 h-3.5" style={{ color: "#cbd5e1" }} />
             <AnimatePresence mode="wait">
               <motion.span

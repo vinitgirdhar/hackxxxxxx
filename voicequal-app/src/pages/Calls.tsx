@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   PhoneCall, PhoneOff, Clock, Mic, PhoneMissed,
   RefreshCw, MessageSquare, PlayCircle, Loader2, Sparkles,
-  FileText, ChevronDown,
+  FileText, ChevronDown, Send,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import DashboardLayout from "../components/DashboardLayout";
@@ -176,7 +176,7 @@ function MiniWave({ color }: { color: string }) {
 }
 
 // ── Expanded panel (summary + transcript + audio + BANT) ─────────────────────
-function ExpandedPanel({ callId, bant }: { callId: string; bant: BANTScore | null }) {
+function ExpandedPanel({ callId, bant, leadName }: { callId: string; bant: BANTScore | null; leadName: string }) {
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState<string | null>(null);
   const [transcript, setTranscript] = useState<{ role: string; message: string }[]>([]);
@@ -184,7 +184,39 @@ function ExpandedPanel({ callId, bant }: { callId: string; bant: BANTScore | nul
   const [audioLoading, setAudioLoading] = useState(true);
   const [audioError, setAudioError] = useState(false);
   const [txOpen, setTxOpen] = useState(true);
+  
+  // Telegram State
+  const [telegramSending, setTelegramSending] = useState(false);
+  const [telegramSent, setTelegramSent] = useState(false);
+
   const urlRef = useRef<string | null>(null);
+
+  const handleSendTelegram = async () => {
+    if (!bant) return;
+    setTelegramSending(true);
+    try {
+      const text = `🔔 New Follow-Up Required\n\nComplaint ID: ${callId}\nLead: ${leadName}\nStatus: ${bant.label} (Score: ${bant.total})\n\nSummary:\n${bant.summary || summary || "No summary available"}\n\nPlease review this lead in the dashboard.`;
+      const res = await fetch("https://api.telegram.org/bot8675669112:AAF0r0ESeMx7mziP2PUqos-HiY2CMIfXWZc/sendMessage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: "5916482731",
+          text
+        })
+      });
+      if (res.ok) {
+        setTelegramSent(true);
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        console.error("Telegram API Error:", errorData);
+        alert(`Telegram Error: ${errorData.description || 'Bad Request'}`);
+      }
+    } catch {
+      alert("Error reaching Telegram API");
+    } finally {
+      setTelegramSending(false);
+    }
+  };
 
   useEffect(() => {
     let active = true;
@@ -363,6 +395,29 @@ function ExpandedPanel({ callId, bant }: { callId: string; bant: BANTScore | nul
                 <BANTBar label="Need"      value={bant.need}      color={SCORE_COLOR(bant.need)} />
                 <BANTBar label="Timeline"  value={bant.timeline}  color={SCORE_COLOR(bant.timeline)} />
               </div>
+
+              {(bant.label === "HOT" || bant.label === "WARM") && (
+                <div className="mt-5 pt-4 border-t border-zinc-100">
+                  <button
+                    onClick={handleSendTelegram}
+                    disabled={telegramSending || telegramSent}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all"
+                    style={{ 
+                      backgroundColor: telegramSent ? "rgba(31,138,112,0.1)" : "rgba(15,61,62,0.9)", 
+                      color: telegramSent ? "#1F8A70" : "white",
+                      border: telegramSent ? "1px solid rgba(31,138,112,0.2)" : "1px solid transparent"
+                    }}
+                  >
+                    {telegramSending ? (
+                      <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Sending...</>
+                    ) : telegramSent ? (
+                      <><Sparkles className="w-3.5 h-3.5" /> Sent to Telegram</>
+                    ) : (
+                      <><Send className="w-3.5 h-3.5" /> Send Complaint Summary</>
+                    )}
+                  </button>
+                </div>
+              )}
             </>
           )}
         </div>
@@ -640,7 +695,7 @@ export default function Calls() {
                       transition={{ duration: 0.32, ease: "easeInOut" }}
                       className="overflow-hidden"
                     >
-                      <ExpandedPanel callId={call.id} bant={call.score} />
+                      <ExpandedPanel callId={call.id} bant={call.score} leadName={call.lead} />
                     </motion.div>
                   )}
                 </AnimatePresence>

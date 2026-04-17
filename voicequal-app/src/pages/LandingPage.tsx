@@ -144,6 +144,11 @@ export default function LandingPage() {
 
 
   useEffect(() => {
+    if ('scrollRestoration' in history) {
+      history.scrollRestoration = 'manual';
+    }
+    window.scrollTo(0, 0);
+
     // Spotlight on machined panels
     document.querySelectorAll<HTMLElement>('.machined-panel, .premium-card').forEach(card => {
       card.addEventListener('mousemove', (e: MouseEvent) => {
@@ -284,15 +289,20 @@ export default function LandingPage() {
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] as const }}
           className="glass-header machined-panel px-12 py-3 flex items-center justify-between w-full pointer-events-auto shadow-2xl"
         >
-          <div className="text-xl font-black text-zinc-950 tracking-tighter flex items-center gap-2 uppercase">
+          <button onClick={() => { window.location.href = window.location.pathname; }} className="text-xl font-black text-zinc-950 tracking-tighter flex items-center gap-2 uppercase hover:opacity-80 transition-opacity cursor-pointer">
             <span className="text-amber-400 text-2xl">◎</span>
             Voice<span className="text-emerald-500">Qual</span>
-          </div>
+          </button>
           <div className="hidden md:flex gap-10 text-xs font-bold uppercase tracking-widest text-zinc-500">
-            <a href="#features-section" className="hover-underline hover:text-zinc-950 transition-colors">Platform</a>
-            <a href="#features-section" className="hover-underline hover:text-zinc-950 transition-colors">Features</a>
-            <a href="#pricing-section" className="hover-underline hover:text-zinc-950 transition-colors">Pricing</a>
-            <a href="#cta-section" className="hover-underline hover:text-zinc-950 transition-colors">Get Started</a>
+            {[{ href: "#features-section", label: "Platform" }, { href: "#features-section", label: "Features" }, { href: "#pricing-section", label: "Pricing" }, { href: "#cta-section", label: "Get Started" }].map((link) => (
+              <a
+                key={link.label}
+                href={link.href}
+                className="hover-underline hover:text-zinc-950 transition-colors"
+              >
+                {link.label}
+              </a>
+            ))}
           </div>
           <div className="flex items-center gap-4">
             <button
@@ -334,14 +344,14 @@ export default function LandingPage() {
                   className="magnetic-btn press-effect bg-zinc-950 text-white px-8 py-4 rounded-xl font-black text-sm uppercase tracking-widest shadow-xl hover:bg-amber-400 transition-all duration-300 hover:shadow-[0_0_30px_rgba(212,175,55,0.3)]">
                   <span className="magnetic-btn-inner flex items-center gap-2">Open Dashboard</span>
                 </button>
-                <button
-                  onClick={() => document.getElementById('features-section')?.scrollIntoView({ behavior: 'smooth' })}
+                <a
+                  href="#features-section"
                   className="magnetic-btn press-effect machined-panel text-zinc-950 px-8 py-4 rounded-xl font-black text-sm uppercase tracking-widest hover:bg-white transition-colors">
                   <span className="magnetic-btn-inner flex items-center gap-2">
                     <Waveform bars={4} color="var(--emerald-teal)" />
                     See How It Works
                   </span>
-                </button>
+                </a>
               </motion.div>
               <motion.div variants={fadeUp} className="flex items-center gap-8 mt-10 pt-8 border-t border-zinc-200/50">
                 <div>
@@ -911,11 +921,11 @@ export default function LandingPage() {
                     </li>
                   ))}
                 </ul>
-                <button
-                  onClick={() => document.getElementById('cta-section')?.scrollIntoView({ behavior: 'smooth' })}
-                  className="magnetic-btn press-effect w-full bg-white text-zinc-950 px-8 py-4 rounded-xl font-black text-sm uppercase tracking-widest border border-zinc-300 hover:bg-zinc-50 hover:border-amber-400/50 transition-colors">
+                <a
+                  href="#cta-section"
+                  className="magnetic-btn press-effect w-full bg-white text-zinc-950 px-8 py-4 rounded-xl font-black text-sm uppercase tracking-widest border border-zinc-300 hover:bg-zinc-50 hover:border-amber-400/50 transition-colors block text-center">
                   <span className="magnetic-btn-inner">Start 14-Day Trial</span>
-                </button>
+                </a>
               </div>
             </motion.div>
 
