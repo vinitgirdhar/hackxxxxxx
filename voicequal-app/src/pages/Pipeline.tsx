@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ArrowRight, Flame, Thermometer, Snowflake, Clock } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 20 },

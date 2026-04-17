@@ -18,6 +18,7 @@ html, body {
   margin: 0;
   background: radial-gradient(circle at 50% 0%, #ffffff 0%, #e2e8f0 100%);
   min-height: 100vh;
+  cursor: none;
 }
 
 #root {
@@ -155,14 +156,20 @@ html, body {
 /* Reveal animations */
 .reveal-text span { display: inline-block; transform: translateY(100%); opacity: 0; transition: transform 0.8s cubic-bezier(0.16,1,0.3,1), opacity 0.8s; }
 .reveal-text.active span { transform: translateY(0); opacity: 1; }
-.reveal-3d { opacity: 0; transform: translateY(60px); transition: opacity 0.9s ease-out, transform 1.2s cubic-bezier(0.16,1,0.3,1); }
-.reveal-3d.active { opacity: 1; transform: translateY(0); }
+.reveal-3d { 
+    opacity: 0; 
+    transform: translateY(120px) translateZ(-200px) rotateX(-25deg); 
+    transform-origin: center top;
+    transition: opacity 0.9s ease-out, transform 1.2s cubic-bezier(0.16, 1, 0.3, 1); 
+    will-change: transform, opacity;
+}
+.reveal-3d.active { opacity: 1; transform: translateY(0) translateZ(0) rotateX(0deg); }
 
 /* Orbit-pop animation for message pills */
 @keyframes orbit-pop {
-  0%, 100% { opacity: 0; transform: scale(0.7); }
-  15%, 85% { opacity: 1; transform: scale(1); }
-  50% { transform: scale(1.05); }
+    0%, 100% { opacity: 0; transform: scale(0.7) translateZ(-100px) rotateX(15deg); filter: blur(8px); }
+    15%, 85% { opacity: 1; transform: scale(1) translateZ(80px) rotateX(0deg); filter: blur(0px); }
+    50% { transform: scale(1.05) translateZ(120px) rotateX(-5deg); }
 }
 .message-pill {
   position: absolute;
@@ -185,3 +192,166 @@ html, body {
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(31,138,112,0.4); border-radius: 10px; }
+
+/* --- Precision Cursor --- */
+.magnetic-btn { cursor: none; }
+#cursor {
+    position: fixed; top: 0; left: 0; width: 6px; height: 6px;
+    background: var(--gold); border-radius: 50%;
+    pointer-events: none; z-index: 9999;
+    transition: width 0.2s, height 0.2s, background 0.2s;
+    will-change: transform;
+}
+#cursor-follower {
+    position: fixed; top: 0; left: 0; width: 36px; height: 36px;
+    border: 1px solid rgba(212, 175, 55, 0.5); border-radius: 50%;
+    pointer-events: none; z-index: 9998;
+    transition: width 0.2s, height 0.2s, border-color 0.2s, background-color 0.2s;
+    will-change: transform;
+}
+body:hover #cursor-follower { border-color: rgba(212, 175, 55, 1); width: 48px; height: 48px; }
+
+/* --- Mockup Console Animations --- */
+@keyframes slideUpFade { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.mockup-child { opacity: 0; }
+.reveal-3d.active .mockup-child-1 { animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards; }
+.reveal-3d.active .mockup-child-2 { animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards; }
+.reveal-3d.active .mockup-child-3 { animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.4s forwards; }
+.reveal-3d.active .mockup-child-4 { animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards; }
+.mockup-float { animation: float-slow 6s ease-in-out infinite; }
+
+/* --- Terminal Typing Effect --- */
+.type-1 { width: 0; overflow: hidden; white-space: nowrap; border-right: 2px solid transparent; display: inline-block; vertical-align: bottom; }
+.reveal-3d.active .type-1 { animation: typing-1 0.4s steps(10, end) 0.6s forwards, blink-cursor 0.75s step-end infinite; }
+@keyframes typing-1 { from { width: 0; } to { width: 11ch; } }
+.type-2 { width: 0; overflow: hidden; white-space: nowrap; border-right: 2px solid transparent; display: inline-block; vertical-align: bottom; }
+.reveal-3d.active .type-2 { animation: typing-2 0.8s steps(37, end) 1.0s forwards, blink-cursor 0.75s step-end infinite; }
+@keyframes typing-2 { from { width: 0; } to { width: 38ch; } }
+@keyframes blink-cursor { 0%, 100% { border-color: transparent; } 50% { border-color: var(--emerald-teal); } }
+.fade-in-delay-1 { opacity: 0; }
+.reveal-3d.active .fade-in-delay-1 { animation: fade-in-text 0.3s ease-out 1.0s forwards; }
+.fade-in-delay-2 { opacity: 0; }
+.reveal-3d.active .fade-in-delay-2 { animation: fade-in-text 0.3s ease-out 1.8s forwards; }
+@keyframes fade-in-text { to { opacity: 1; } }
+
+/* Magnetic Button */
+.magnetic-btn { display: inline-flex; justify-content: center; align-items: center; will-change: transform; cursor: none; }
+.magnetic-btn-inner { pointer-events: none; transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
+
+/* Perspective container */
+.perspective-container { perspective: 1200px; transform-style: preserve-3d; }
+.parallax-layer { transition: transform 0.1s linear; will-change: transform; }
+
+/* ===== FEATURE FLIP CARDS ===== */
+.flip-card-scene {
+  perspective: 900px;
+  height: 340px;
+}
+.flip-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.75s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-origin: center center;
+}
+.flip-card-scene:hover .flip-card-inner {
+  transform: rotateY(180deg);
+}
+.flip-card-front,
+.flip-card-back {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 24px;
+  overflow: hidden;
+}
+.flip-card-front {
+  background: rgba(255,255,255,0.75);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(15,61,62,0.12);
+  box-shadow: 0 8px 32px rgba(15,61,62,0.08), 0 2px 8px rgba(0,0,0,0.04);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 36px 28px;
+  text-align: center;
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+.flip-card-scene:hover .flip-card-front {
+  box-shadow: 0 16px 48px rgba(15,61,62,0.15);
+}
+.flip-card-back {
+  background: #0a0e1a;
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  transform: rotateY(180deg);
+  display: flex;
+  flex-direction: column;
+  padding: 28px;
+}
+
+/* Icon box on front cards */
+.feature-icon-box {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  position: relative;
+  flex-shrink: 0;
+}
+.feature-icon-box::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.3);
+  pointer-events: none;
+}
+
+/* Staggered card entry animation */
+.feature-card-wrap {
+  opacity: 0;
+  transform: translateY(50px) scale(0.96);
+  transition: opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.9s cubic-bezier(0.16,1,0.3,1);
+}
+.feature-card-wrap.card-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+.feature-card-wrap:nth-child(1) { transition-delay: 0.05s; }
+.feature-card-wrap:nth-child(2) { transition-delay: 0.18s; }
+.feature-card-wrap:nth-child(3) { transition-delay: 0.31s; }
+.feature-card-wrap:nth-child(4) { transition-delay: 0.44s; }
+
+/* Shimmer line on card top */
+.flip-card-front::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 20%; right: 20%; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(212,175,55,0.6), transparent);
+  border-radius: 99px;
+}
+
+/* Bullet list on back */
+.feature-bullet {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.65);
+  line-height: 1.6;
+}
+.feature-bullet-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  margin-top: 6px;
+  flex-shrink: 0;
+}

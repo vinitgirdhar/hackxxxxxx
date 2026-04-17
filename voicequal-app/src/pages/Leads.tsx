@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Search, Filter, ArrowUpRight, Phone, Mail, ChevronDown } from "lucide-react";
+import { Search, ArrowUpRight } from "lucide-react";
 import { useState } from "react";
 
 const fadeUp = (delay = 0) => ({

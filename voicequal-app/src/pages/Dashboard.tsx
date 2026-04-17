@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import {
   Users, PhoneCall, ArrowRight, ArrowUpRight, Flame, Target,
-  BarChart3, Gem, Mic, Plus, Send, RefreshCw, Zap, Sparkles, Clock,
+  BarChart3, Gem, Mic, Plus, Send, RefreshCw, Zap, Sparkles,
 } from "lucide-react";
 import { useRef, useState, useCallback, useEffect } from "react";
 import DashboardLayout from "../components/DashboardLayout";
