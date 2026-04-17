@@ -1,9 +1,11 @@
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Users, PhoneCall, ArrowRight, Flame, Target,
   BarChart3, Gem, RefreshCw, Zap, Sparkles,
   Search, Volume2, Clock, CalendarDays,
-  ArrowUpRight,
+  ArrowUpRight, Building2, Mail, ChevronDown,
+  TrendingUp, Star, CheckCircle2, AlertCircle,
+  DollarSign, Tag, MoreHorizontal, Plus,
 } from "lucide-react";
 import { useRef, useState, useCallback, useEffect } from "react";
 import { useLocation } from "wouter";
@@ -156,6 +158,347 @@ function ConversionFunnel({ total, completed, hot }: { total: number; completed:
   );
 }
 
+// ─── CRM Data ────────────────────────────────────────────────────────────
+type CRMContact = {
+  id: string; name: string; company: string; email: string;
+  deal: number; stage: string; score: number; label: "HOT" | "WARM" | "COLD";
+  lastCall: string; tags: string[];
+};
+
+const CRM_STAGES = ["Contacted", "Qualified", "Proposal", "Negotiation", "Closed"];
+
+const CRM_DATA: CRMContact[] = [
+  { id:"c1",  name:"Rajesh Kumar",   company:"TechSoft Solutions",   email:"rajesh@techsoft.in",    deal:480000, stage:"Negotiation", score:8.5, label:"HOT",  lastCall:"Today, 9:15 AM",  tags:["SaaS","Enterprise"] },
+  { id:"c2",  name:"Priya Sharma",   company:"FinEdge Capital",      email:"priya@finedge.com",     deal:320000, stage:"Proposal",    score:7.8, label:"HOT",  lastCall:"Today, 9:48 AM",  tags:["Fintech"] },
+  { id:"c3",  name:"Sunita Verma",   company:"HealthBridge Pvt Ltd", email:"sunita@healthbridge.in",deal:760000, stage:"Closed",      score:9.0, label:"HOT",  lastCall:"Today, 10:55 AM", tags:["Healthcare","Urgent"] },
+  { id:"c4",  name:"Siddharth Roy",  company:"NeoFinance Ltd",       email:"sid@neofinance.com",    deal:540000, stage:"Negotiation", score:8.8, label:"HOT",  lastCall:"Today, 3:20 PM",  tags:["Fintech","Series B"] },
+  { id:"c5",  name:"Manish Patel",   company:"GreenEnergy Corp",     email:"manish@greenenergy.co", deal:920000, stage:"Closed",      score:9.2, label:"HOT",  lastCall:"Today, 2:00 PM",  tags:["Energy","Capex"] },
+  { id:"c6",  name:"Aarav Mehta",    company:"LogiTrack India",      email:"aarav@logitrack.in",    deal:210000, stage:"Qualified",   score:5.5, label:"WARM", lastCall:"Today, 10:22 AM", tags:["Logistics"] },
+  { id:"c7",  name:"Deepika Joshi",  company:"EduPrime Network",     email:"deepika@eduprime.in",   deal:180000, stage:"Proposal",    score:6.2, label:"WARM", lastCall:"Today, 12:05 PM", tags:["EdTech"] },
+  { id:"c8",  name:"Vikram Singh",   company:"AutoParts Direct",     email:"vikram@autoparts.in",   deal:390000, stage:"Qualified",   score:8.0, label:"HOT",  lastCall:"Today, 12:40 PM", tags:["Auto","Fleet"] },
+  { id:"c9",  name:"Ritu Agarwal",   company:"MediScan Diagnostics", email:"ritu@mediscan.in",      deal:270000, stage:"Proposal",    score:6.8, label:"WARM", lastCall:"Today, 2:45 PM",  tags:["Healthcare"] },
+  { id:"c10", name:"Arjun Kapoor",   company:"SmartCity Infra",      email:"arjun@smartcity.gov.in",deal:1200000,stage:"Qualified",   score:5.8, label:"WARM", lastCall:"Today, 4:40 PM",  tags:["Govt","Infra"] },
+  { id:"c11", name:"Neha Gupta",     company:"InsureMax Digital",    email:"neha@insuremax.com",    deal:145000, stage:"Negotiation", score:7.5, label:"HOT",  lastCall:"Today, 5:15 PM",  tags:["Insurance"] },
+  { id:"c12", name:"Ananya Bose",    company:"CloudServe Tech",      email:"ananya@cloudserve.io",  deal:95000,  stage:"Contacted",   score:3.2, label:"COLD", lastCall:"Today, 1:15 PM",  tags:["Cloud"] },
+];
+
+function fmtInr(n: number) {
+  if (n >= 100000) return `₹${(n / 100000).toFixed(1)}L`;
+  return `₹${(n / 1000).toFixed(0)}K`;
+}
+
+function CRMPanel({ panelRef }: { panelRef?: React.RefObject<HTMLDivElement> }) {
+  const [activeStage, setActiveStage] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  const filtered = CRM_DATA.filter(c => {
+    const matchStage = !activeStage || c.stage === activeStage;
+    const matchSearch = !search || c.name.toLowerCase().includes(search.toLowerCase()) || c.company.toLowerCase().includes(search.toLowerCase());
+    return matchStage && matchSearch;
+  });
+
+  const stageCounts = CRM_STAGES.reduce<Record<string, number>>((acc, s) => {
+    acc[s] = CRM_DATA.filter(c => c.stage === s).length;
+    return acc;
+  }, {});
+
+  const stageValues = CRM_STAGES.reduce<Record<string, number>>((acc, s) => {
+    acc[s] = CRM_DATA.filter(c => c.stage === s).reduce((sum, c) => sum + c.deal, 0);
+    return acc;
+  }, {});
+
+  const totalPipeline = CRM_DATA.reduce((s, c) => s + c.deal, 0);
+  const closedValue   = CRM_DATA.filter(c => c.stage === "Closed").reduce((s, c) => s + c.deal, 0);
+
+  const STAGE_COLORS: Record<string, string> = {
+    Contacted:   "#94a3b8",
+    Qualified:   "#3B82F6",
+    Proposal:    "#D4AF37",
+    Negotiation: "#F97316",
+    Closed:      "#1F8A70",
+  };
+
+  const labelColor = (l: string) =>
+    l === "HOT" ? "#1F8A70" : l === "WARM" ? "#D4AF37" : "#94a3b8";
+
+  return (
+    <motion.div ref={panelRef} {...fadeUp(0.2)} className="premium-card overflow-hidden">
+      {/* Header */}
+      <div className="px-6 py-4 flex items-center justify-between gap-4 flex-wrap"
+        style={{ borderBottom: "1px solid rgba(0,0,0,0.06)", background: "rgba(212,175,55,0.02)" }}>
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center"
+            style={{ background: "linear-gradient(135deg,#1F8A70,#0F3D3E)" }}>
+            <Users className="w-4 h-4 text-white" />
+          </div>
+          <div>
+            <div className="text-sm font-black uppercase tracking-wider" style={{ color: "#09090b", fontFamily: "'Outfit',sans-serif" }}>
+              CRM Pipeline
+            </div>
+            <div className="text-[10px] font-medium mt-0.5" style={{ color: "#94a3b8" }}>
+              {CRM_DATA.length} contacts · {fmtInr(totalPipeline)} pipeline · {fmtInr(closedValue)} closed
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3" style={{ color: "#94a3b8" }} />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search contacts…"
+              className="pl-8 pr-3 py-1.5 text-xs rounded-lg border outline-none"
+              style={{ borderColor: "rgba(0,0,0,0.1)", background: "rgba(0,0,0,0.02)", color: "#09090b", width: 160 }} />
+          </div>
+          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black text-white"
+            style={{ background: "linear-gradient(135deg,#1F8A70,#0F3D3E)" }}>
+            <Plus className="w-3 h-3" /> Add Contact
+          </button>
+        </div>
+      </div>
+
+      {/* Pipeline stage bar */}
+      <div className="px-6 py-3 flex items-center gap-2 flex-wrap"
+        style={{ borderBottom: "1px solid rgba(0,0,0,0.05)", background: "rgba(0,0,0,0.01)" }}>
+        <button onClick={() => setActiveStage(null)}
+          className="text-[10px] font-black px-3 py-1 rounded-full transition-all"
+          style={{ background: !activeStage ? "rgba(15,61,62,0.1)" : "transparent", color: !activeStage ? "#0F3D3E" : "#94a3b8", border: `1px solid ${!activeStage ? "rgba(15,61,62,0.2)" : "transparent"}` }}>
+          All ({CRM_DATA.length})
+        </button>
+        {CRM_STAGES.map(s => (
+          <button key={s} onClick={() => setActiveStage(activeStage === s ? null : s)}
+            className="text-[10px] font-black px-3 py-1 rounded-full transition-all flex items-center gap-1.5"
+            style={{
+              background: activeStage === s ? `${STAGE_COLORS[s]}15` : "transparent",
+              color: activeStage === s ? STAGE_COLORS[s] : "#94a3b8",
+              border: `1px solid ${activeStage === s ? `${STAGE_COLORS[s]}30` : "transparent"}`,
+            }}>
+            <span className="w-1.5 h-1.5 rounded-full" style={{ background: STAGE_COLORS[s] }} />
+            {s} <span className="opacity-70">({stageCounts[s]})</span>
+            <span className="ml-0.5 opacity-60">{fmtInr(stageValues[s])}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Pipeline progress bar */}
+      <div className="px-6 py-2.5" style={{ borderBottom: "1px solid rgba(0,0,0,0.04)" }}>
+        <div className="h-2 rounded-full overflow-hidden flex gap-0.5" style={{ background: "rgba(0,0,0,0.04)" }}>
+          {CRM_STAGES.map(s => {
+            const pct = (stageValues[s] / totalPipeline) * 100;
+            return (
+              <motion.div key={s} initial={{ width: 0 }} animate={{ width: `${pct}%` }}
+                transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+                title={`${s}: ${fmtInr(stageValues[s])}`}
+                className="h-full rounded-full" style={{ background: STAGE_COLORS[s], minWidth: pct > 0 ? 4 : 0 }} />
+            );
+          })}
+        </div>
+        <div className="flex gap-4 mt-1.5">
+          {CRM_STAGES.map(s => (
+            <div key={s} className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: STAGE_COLORS[s] }} />
+              <span className="text-[9px] font-bold" style={{ color: "#94a3b8" }}>{s}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Contacts table */}
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr style={{ borderBottom: "1px solid rgba(0,0,0,0.05)", background: "rgba(0,0,0,0.01)" }}>
+              {["Contact", "Stage", "Deal Value", "BANT", "Last Call", "Tags", ""].map(h => (
+                <th key={h} className="text-left px-4 py-2.5 text-[9px] font-black uppercase tracking-widest" style={{ color: "#94a3b8" }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((c, i) => {
+              const sc = STAGE_COLORS[c.stage] ?? "#94a3b8";
+              const lc = labelColor(c.label);
+              const isExp = expanded === c.id;
+              return (
+                <>
+                  <motion.tr key={c.id}
+                    initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.03 }}
+                    onClick={() => setExpanded(isExp ? null : c.id)}
+                    className="cursor-pointer transition-colors"
+                    style={{ borderBottom: "1px solid rgba(0,0,0,0.04)", background: isExp ? "rgba(31,138,112,0.03)" : undefined }}>
+
+                    {/* Contact */}
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-xl flex items-center justify-center text-[10px] font-black text-white shrink-0"
+                          style={{ background: `linear-gradient(135deg,${lc},${lc}88)` }}>
+                          {c.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                        </div>
+                        <div>
+                          <div className="text-xs font-black" style={{ color: "#09090b", fontFamily: "'Outfit',sans-serif" }}>{c.name}</div>
+                          <div className="text-[10px] flex items-center gap-1 mt-0.5" style={{ color: "#94a3b8" }}>
+                            <Building2 className="w-2.5 h-2.5" />{c.company}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Stage */}
+                    <td className="px-4 py-3">
+                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full"
+                        style={{ background: `${sc}15`, color: sc, border: `1px solid ${sc}25` }}>
+                        {c.stage}
+                      </span>
+                    </td>
+
+                    {/* Deal */}
+                    <td className="px-4 py-3">
+                      <div className="text-sm font-black tabular-nums" style={{ color: "#09090b", fontFamily: "'Outfit',sans-serif" }}>
+                        {fmtInr(c.deal)}
+                      </div>
+                    </td>
+
+                    {/* BANT score */}
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1.5">
+                        <div className="relative w-7 h-7">
+                          <svg width="28" height="28" style={{ transform: "rotate(-90deg)" }}>
+                            <circle cx="14" cy="14" r="10" fill="none" stroke="rgba(0,0,0,0.06)" strokeWidth="3" />
+                            <motion.circle cx="14" cy="14" r="10" fill="none" stroke={lc} strokeWidth="3"
+                              strokeLinecap="round"
+                              initial={{ strokeDasharray: `0 ${2 * Math.PI * 10}` }}
+                              animate={{ strokeDasharray: `${(c.score / 10) * 2 * Math.PI * 10} ${2 * Math.PI * 10}` }}
+                              transition={{ duration: 1, delay: i * 0.05 }} />
+                          </svg>
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="text-[8px] font-black" style={{ color: lc }}>{c.score}</span>
+                          </div>
+                        </div>
+                        <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full"
+                          style={{ background: `${lc}12`, color: lc }}>{c.label}</span>
+                      </div>
+                    </td>
+
+                    {/* Last call */}
+                    <td className="px-4 py-3">
+                      <div className="text-[10px] font-medium flex items-center gap-1" style={{ color: "#71717a" }}>
+                        <Clock className="w-2.5 h-2.5 shrink-0" />{c.lastCall}
+                      </div>
+                    </td>
+
+                    {/* Tags */}
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap gap-1">
+                        {c.tags.map(t => (
+                          <span key={t} className="text-[9px] font-bold px-1.5 py-0.5 rounded-md"
+                            style={{ background: "rgba(212,175,55,0.08)", color: "#A67C2E", border: "1px solid rgba(212,175,55,0.15)" }}>
+                            {t}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+
+                    {/* Expand */}
+                    <td className="px-4 py-3">
+                      <motion.div animate={{ rotate: isExp ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                        <ChevronDown className="w-3.5 h-3.5" style={{ color: "#94a3b8" }} />
+                      </motion.div>
+                    </td>
+                  </motion.tr>
+
+                  {/* Expanded detail row */}
+                  <AnimatePresence>
+                    {isExp && (
+                      <tr key={`${c.id}-exp`}>
+                        <td colSpan={7} style={{ padding: 0 }}>
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }}
+                            className="overflow-hidden">
+                            <div className="px-6 py-4 grid grid-cols-4 gap-4"
+                              style={{ background: "rgba(31,138,112,0.03)", borderBottom: "1px solid rgba(31,138,112,0.08)" }}>
+                              {/* Email */}
+                              <div>
+                                <div className="text-[9px] font-black uppercase tracking-widest mb-1" style={{ color: "#94a3b8" }}>Email</div>
+                                <div className="flex items-center gap-1.5">
+                                  <Mail className="w-3 h-3 shrink-0" style={{ color: "#1F8A70" }} />
+                                  <span className="text-xs font-medium" style={{ color: "#09090b" }}>{c.email}</span>
+                                </div>
+                              </div>
+                              {/* Deal size */}
+                              <div>
+                                <div className="text-[9px] font-black uppercase tracking-widest mb-1" style={{ color: "#94a3b8" }}>Deal Value</div>
+                                <div className="flex items-center gap-1.5">
+                                  <DollarSign className="w-3 h-3 shrink-0" style={{ color: "#D4AF37" }} />
+                                  <span className="text-sm font-black" style={{ color: "#09090b" }}>₹{c.deal.toLocaleString('en-IN')}</span>
+                                </div>
+                              </div>
+                              {/* BANT breakdown */}
+                              <div>
+                                <div className="text-[9px] font-black uppercase tracking-widest mb-1" style={{ color: "#94a3b8" }}>BANT Score</div>
+                                <div className="flex items-center gap-2">
+                                  {["B","A","N","T"].map((k, idx) => {
+                                    const vals = [
+                                      Math.round(c.score * 0.9 + Math.random()),
+                                      Math.round(c.score * 1.05),
+                                      Math.round(c.score * 0.95),
+                                      Math.round(c.score * 0.88 + 0.5),
+                                    ];
+                                    const v = Math.min(10, vals[idx]);
+                                    return (
+                                      <div key={k} className="flex flex-col items-center">
+                                        <span className="text-[8px] font-black" style={{ color: labelColor(c.label) }}>{k}</span>
+                                        <span className="text-[10px] font-black" style={{ color: "#09090b" }}>{v}</span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                              {/* Actions */}
+                              <div>
+                                <div className="text-[9px] font-black uppercase tracking-widest mb-1" style={{ color: "#94a3b8" }}>Actions</div>
+                                <div className="flex gap-2">
+                                  <button className="text-[10px] font-black px-2.5 py-1 rounded-lg"
+                                    style={{ background: "rgba(31,138,112,0.1)", color: "#1F8A70", border: "1px solid rgba(31,138,112,0.2)" }}>
+                                    Call Again
+                                  </button>
+                                  <button className="text-[10px] font-black px-2.5 py-1 rounded-lg"
+                                    style={{ background: "rgba(212,175,55,0.1)", color: "#A67C2E", border: "1px solid rgba(212,175,55,0.2)" }}>
+                                    Move Stage
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </motion.div>
+                        </td>
+                      </tr>
+                    )}
+                  </AnimatePresence>
+                </>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Footer */}
+      <div className="px-6 py-3 flex items-center justify-between"
+        style={{ borderTop: "1px solid rgba(0,0,0,0.05)" }}>
+        <span className="text-[10px] font-medium" style={{ color: "#94a3b8" }}>
+          Showing {filtered.length} of {CRM_DATA.length} contacts
+        </span>
+        <div className="flex items-center gap-4">
+          {[["HOT", "#1F8A70"], ["WARM", "#D4AF37"], ["COLD", "#94a3b8"]].map(([l, c]) => (
+            <div key={l} className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: c }} />
+              <span className="text-[10px] font-bold" style={{ color: "#94a3b8" }}>{l}: {CRM_DATA.filter(x => x.label === l).length}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 // ─── Activity Feed ────────────────────────────────────────────────────────
 function ActivityFeed({ leads }: { leads: LiveLead[] }) {
   const latest = leads.slice(0, 6);
@@ -220,7 +563,7 @@ function ToastStack({ toasts, remove }: { toasts: ToastItem[]; remove: (id: numb
 }
 
 // ─── Quick Actions ────────────────────────────────────────────────────────
-function QuickActions({ liveLeads }: { liveLeads: LiveLead[] }) {
+function QuickActions({ liveLeads, crmRef }: { liveLeads: LiveLead[]; crmRef: React.RefObject<HTMLDivElement> }) {
   const [, navigate] = useLocation();
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [busyIdx, setBusyIdx] = useState<number | null>(null);
@@ -244,9 +587,22 @@ function QuickActions({ liveLeads }: { liveLeads: LiveLead[] }) {
       document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
       push({ title:'Export Complete', sub:`${liveLeads.length} calls exported`, color:'#D4AF37' });
     } else if (i === 2) {
-      push({ title:'Syncing CRM…', sub:'Pushing qualified leads to HubSpot', color:'#0F3D3E', progress:true });
+      // Scroll to and flash the CRM panel
+      if (crmRef.current) {
+        crmRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        crmRef.current.style.transition = 'box-shadow 0.3s ease, outline 0.3s ease';
+        crmRef.current.style.outline = '2px solid rgba(31,138,112,0.6)';
+        crmRef.current.style.boxShadow = '0 0 0 6px rgba(31,138,112,0.12)';
+        setTimeout(() => {
+          if (crmRef.current) {
+            crmRef.current.style.outline = '';
+            crmRef.current.style.boxShadow = '';
+          }
+        }, 2000);
+      }
+      push({ title:'Syncing CRM…', sub:'Pushing qualified leads to pipeline', color:'#0F3D3E', progress:true });
       await new Promise(r => setTimeout(r, 3300));
-      push({ title:'Sync Complete', sub:`${liveLeads.filter(l=>l.bucket==='HOT').length} hot leads pushed`, color:'#1F8A70' });
+      push({ title:'Sync Complete', sub:`${liveLeads.filter(l=>l.bucket==='HOT').length} hot leads pushed to CRM`, color:'#1F8A70' });
     } else if (i === 3) {
       navigate('/calls');
     }
@@ -404,6 +760,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [callLoading, setCallLoading] = useState(false);
+  const crmRef = useRef<HTMLDivElement>(null);
   const [phoneNum, setPhoneNum] = useState('+919999999999');
 
   useEffect(() => {
@@ -557,10 +914,13 @@ export default function Dashboard() {
           <motion.div {...fadeUp(0.2)} className="lg:col-span-1 flex flex-col gap-4">
             <div className="premium-card p-5">
               <div className="text-xs font-black uppercase tracking-widest mb-4" style={{ color:'#94a3b8' }}>Quick Actions</div>
-              <QuickActions liveLeads={liveLeads} />
+              <QuickActions liveLeads={liveLeads} crmRef={crmRef} />
             </div>
           </motion.div>
         </div>
+
+        {/* ── CRM Pipeline ────────────────────────────────────────────── */}
+        <CRMPanel panelRef={crmRef} />
 
         {/* ── Live Leads Table ─────────────────────────────────────────── */}
         <motion.div {...fadeUp(0.15)} className="premium-card overflow-hidden">
