@@ -461,11 +461,11 @@ export default function Calls() {
   const [calls, setCalls] = useState<CallRow[]>(MOCK_CALLS);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [liveCalls, setLiveCalls] = useState<{ id: string; lead: string; startTime: string }[]>([]);
 
   // Score cache so we don't re-score when collapsing/expanding
   const scoreCache = useRef<Record<string, BANTScore>>({});
-
-
+  const liveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchCalls = async () => {
     setLoading(true);
@@ -534,6 +534,33 @@ export default function Calls() {
 
   useEffect(() => { fetchCalls(); }, []);
 
+  // ── Live call polling — check every 8s for in_progress conversations ──────
+  useEffect(() => {
+    const pollLive = async () => {
+      try {
+        const res = await fetch(
+          "https://api.elevenlabs.io/v1/convai/conversations?limit=50",
+          { headers: { "xi-api-key": ELEVENLABS_API_KEY } }
+        );
+        const data = await res.json();
+        if (data.conversations) {
+          const active = data.conversations
+            .filter((c: any) => c.status === "in_progress")
+            .map((c: any) => ({
+              id: c.conversation_id,
+              lead: c.call_summary_title || "Active Call",
+              startTime: formatTime(c.start_time_unix_secs),
+            }));
+          setLiveCalls(active);
+        }
+      } catch { /* silent — don't interrupt UI */ }
+    };
+
+    pollLive(); // immediate first check
+    liveTimerRef.current = setInterval(pollLive, 8000); // then every 8s
+    return () => { if (liveTimerRef.current) clearInterval(liveTimerRef.current); };
+  }, []);
+
   const completed = calls.filter(c => c.status === "COMPLETED").length;
   const hot       = calls.filter(c => c.score?.label === "HOT").length;
   const avgScore  = calls.filter(c => c.score).length
@@ -543,7 +570,7 @@ export default function Calls() {
   const stats = [
     { label: "Total Calls",  value: String(calls.length), color: "#0F3D3E", icon: PhoneCall },
     { label: "Connected",    value: String(completed),    color: "#1F8A70", icon: PhoneCall },
-    { label: "Hot Leads",    value: String(hot),          color: "#D4AF37", icon: Sparkles  },
+    { label: "Live Now",     value: String(liveCalls.length || 0), color: "#D4AF37", icon: Mic },
     { label: "Avg BANT",     value: avgScore,             color: "#0F3D3E", icon: PhoneOff  },
   ];
 
@@ -605,6 +632,73 @@ export default function Calls() {
             </motion.div>
           ))}
         </motion.div>
+
+        {/* Live Calls Banner — only shown when a call is in progress */}
+        <AnimatePresence>
+          {liveCalls.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: -10, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.98 }}
+              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              className="rounded-2xl overflow-hidden"
+              style={{ border: "1.5px solid rgba(212,175,55,0.35)", background: "linear-gradient(135deg, rgba(212,175,55,0.06), rgba(212,175,55,0.02))" }}
+            >
+              {/* Banner Header */}
+              <div className="px-5 py-3 flex items-center gap-3" style={{ borderBottom: "1px solid rgba(212,175,55,0.15)" }}>
+                <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: "#A67C2E" }}>
+                  {liveCalls.length} Call{liveCalls.length > 1 ? "s" : ""} In Progress
+                </span>
+                <span className="text-[9px] font-medium ml-1" style={{ color: "#94a3b8" }}>· Polling every 8s</span>
+                <div className="ml-auto flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full"
+                  style={{ background: "rgba(212,175,55,0.1)", color: "#D4AF37", border: "1px solid rgba(212,175,55,0.2)" }}>
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping inline-block" />
+                  Live
+                </div>
+              </div>
+
+              {/* Live call rows */}
+              {liveCalls.map((lc, i) => (
+                <motion.div key={lc.id}
+                  initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.06 }}
+                  className="flex items-center gap-4 px-5 py-3.5"
+                  style={{ borderBottom: i < liveCalls.length - 1 ? "1px solid rgba(212,175,55,0.08)" : "none" }}
+                >
+                  {/* Animated mic icon */}
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                    style={{ background: "rgba(212,175,55,0.12)", border: "1px solid rgba(212,175,55,0.2)" }}>
+                    <MiniWave color="#D4AF37" />
+                  </div>
+
+                  {/* Call info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="font-bold text-sm truncate" style={{ color: "#09090b", fontFamily: "'Outfit', sans-serif" }}>
+                      {lc.lead}
+                    </div>
+                    <div className="text-[10px] font-medium" style={{ color: "#94a3b8" }}>
+                      {lc.id.slice(0, 22)}… · Started {lc.startTime}
+                    </div>
+                  </div>
+
+                  {/* Elapsed indicator */}
+                  <div className="flex items-center gap-1.5 text-[10px] font-black" style={{ color: "#D4AF37" }}>
+                    <Clock className="w-3 h-3" />
+                    <span>Ongoing</span>
+                  </div>
+
+                  {/* Live badge */}
+                  <span className="text-[9px] font-black px-2 py-1 rounded-full uppercase tracking-widest flex items-center gap-1"
+                    style={{ background: "rgba(212,175,55,0.1)", color: "#A67C2E", border: "1px solid rgba(212,175,55,0.2)" }}>
+                    <span className="w-1 h-1 rounded-full bg-amber-400 animate-pulse" />
+                    Live
+                  </span>
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Calls table */}
         <motion.div {...fadeUp(0.14)} className="premium-card overflow-hidden">
