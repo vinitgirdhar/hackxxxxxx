@@ -9,12 +9,12 @@ import { useEffect, useRef } from "react";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
-  { icon: UserCheck,        label: "Leads",     href: "/leads"     },
-  { icon: PhoneCall,        label: "Calls",     href: "/calls"     },
-  { icon: BarChart3,        label: "Analytics", href: "/analytics" },
-  { icon: Activity,         label: "Pipeline",  href: "/pipeline"  },
-  { icon: Settings,         label: "Settings",  href: "/settings"  },
-  { icon: HelpCircle,       label: "Help & Docs", href: "/help"    },
+  { icon: UserCheck, label: "Leads", href: "/leads" },
+  { icon: PhoneCall, label: "Calls", href: "/calls" },
+  { icon: BarChart3, label: "Analytics", href: "/analytics" },
+  { icon: Activity, label: "Pipeline", href: "/pipeline" },
+  { icon: Settings, label: "Settings", href: "/settings" },
+  { icon: HelpCircle, label: "Help & Docs", href: "/help" },
 ];
 
 // Floating particles for sidebar decoration

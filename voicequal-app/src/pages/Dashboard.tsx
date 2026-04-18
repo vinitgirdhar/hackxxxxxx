@@ -254,10 +254,6 @@ function CRMPanel({ panelRef }: { panelRef?: React.RefObject<HTMLDivElement> }) 
               className="pl-8 pr-3 py-1.5 text-xs rounded-lg border outline-none"
               style={{ borderColor: "rgba(0,0,0,0.1)", background: "rgba(0,0,0,0.02)", color: "#09090b", width: 160 }} />
           </div>
-          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black text-white"
-            style={{ background: "linear-gradient(135deg,#1F8A70,#0F3D3E)" }}>
-            <Plus className="w-3 h-3" /> Add Contact
-          </button>
         </div>
       </div>
 
@@ -927,62 +923,7 @@ export default function Dashboard() {
         {/* ── CRM Pipeline ────────────────────────────────────────────── */}
         <CRMPanel panelRef={crmRef} />
 
-        {/* ── Live Leads Table ─────────────────────────────────────────── */}
-        <motion.div {...fadeUp(0.15)} className="premium-card overflow-hidden">
-          <div className="px-6 py-4 border-b flex items-center justify-between gap-4" style={{ borderColor: 'rgba(0,0,0,0.06)' }}>
-            <div>
-              <div className="text-sm font-black uppercase tracking-wider" style={{ color: '#09090b' }}>Live Leads</div>
-              <div className="text-[10px] font-medium mt-0.5" style={{ color: '#94a3b8' }}>{liveLeads.length} total · {liveLeads.filter(l => l.status === 'CALLING').length} active</div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3" style={{ color: '#94a3b8' }} />
-                <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search leads…"
-                  className="pl-8 pr-3 py-1.5 text-xs rounded-lg border outline-none" style={{ borderColor: 'rgba(0,0,0,0.1)', background: 'rgba(0,0,0,0.02)', color: '#09090b', width: 160 }} />
-              </div>
-              <div className="flex items-center gap-2">
-                <input value={phoneNum} onChange={e => setPhoneNum(e.target.value)}
-                  className="text-xs px-3 py-1.5 rounded-lg border outline-none" style={{ borderColor: 'rgba(0,0,0,0.1)', background: 'rgba(0,0,0,0.02)', color: '#09090b', width: 140 }} />
-                <motion.button onClick={handleTriggerCall} disabled={callLoading} whileHover={{ scale: 1.03, y: -1 }} whileTap={{ scale: 0.97 }}
-                  className="px-4 py-1.5 rounded-lg text-xs font-black text-white transition-all"
-                  style={{ background: 'linear-gradient(135deg,#1F8A70,#0F3D3E)', opacity: callLoading ? 0.7 : 1 }}>
-                  {callLoading ? 'Calling…' : 'Trigger Call'}
-                </motion.button>
-              </div>
-            </div>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
-                  {['Lead', 'Status', 'Score', 'Bucket', 'Recording'].map(h => (
-                    <th key={h} className="text-left px-4 py-3 text-[9px] font-black uppercase tracking-widest" style={{ color: '#94a3b8' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {loading
-                  ? [...Array(5)].map((_, i) => (
-                    <tr key={i} className="border-b" style={{ borderColor: 'rgba(0,0,0,0.04)' }}>
-                      {[...Array(5)].map((__, j) => (
-                        <td key={j} className="py-3.5 px-4"><div className="h-4 rounded animate-pulse" style={{ background: 'rgba(0,0,0,0.05)', width: j === 0 ? 120 : j === 2 ? 60 : 80 }} /></td>
-                      ))}
-                    </tr>))
-                  : filteredLeads.length === 0
-                    ? <tr><td colSpan={5} className="text-center py-12 text-xs font-bold" style={{ color: '#94a3b8' }}>No leads found</td></tr>
-                    : filteredLeads.map(l => <LiveLeadRow key={l.id} lead={l} />)}
-              </tbody>
-            </table>
-          </div>
-          {!loading && liveLeads.length > 0 && (
-            <div className="px-6 py-4 border-t flex items-center justify-between" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
-              <span className="text-[10px] font-medium" style={{ color: '#94a3b8' }}>Showing {filteredLeads.length} of {liveLeads.length}</span>
-              <motion.button onClick={() => navigate('/calls')} whileHover={{ x: 2 }} className="flex items-center gap-1.5 text-xs font-black transition-colors" style={{ color: '#1F8A70' }}>
-                View all <ArrowRight className="w-3 h-3" />
-              </motion.button>
-            </div>
-          )}
-        </motion.div>
+
 
       </div>
     </DashboardLayout>

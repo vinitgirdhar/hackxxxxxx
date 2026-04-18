@@ -167,26 +167,67 @@ export default function HelpDocs() {
 
         {/* Quick Start */}
         {!search && (
-          <motion.div {...fadeUp(0.08)} className="premium-card p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: "rgba(31,138,112,0.1)" }}>
-                <Play className="w-3 h-3" style={{ color: "#1F8A70" }} />
+          <motion.div {...fadeUp(0.08)} className="premium-card p-5 overflow-hidden relative">
+            {/* Background Accent */}
+            <div className="!absolute !top-0 !right-0 -translate-y-1/2 translate-x-1/2 w-64 h-64 bg-emerald-500/10 blur-[80px] rounded-full pointer-events-none" style={{ position: 'absolute', zIndex: 0 }} />
+            
+            <div className="flex items-center justify-between mb-6 relative z-10">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center shadow-inner" 
+                  style={{ background: "linear-gradient(135deg, #1F8A70, #0F3D3E)" }}>
+                  <Zap className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <div className="font-black text-xs uppercase tracking-tight" style={{ color: "#09090b", fontFamily: "'Outfit',sans-serif" }}>Get Started in Seconds</div>
+                  <div className="text-[9px] font-medium" style={{ color: "#94a3b8" }}>The VoiceQual workflow — 5 simple steps</div>
+                </div>
               </div>
-              <span className="font-black text-xs uppercase tracking-wider" style={{ color: "#09090b", fontFamily: "'Outfit',sans-serif" }}>Quick Start — 5 Steps</span>
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[8px] font-black uppercase tracking-widest"
+                style={{ background: "rgba(31,138,112,0.08)", color: "#1F8A70", border: "1px solid rgba(31,138,112,0.15)" }}>
+                <CheckCircle2 className="w-2 h-2" /> Fast Setup
+              </div>
             </div>
-            <div className="flex items-start gap-0 overflow-x-auto pb-1">
+
+            <div className="relative flex justify-between items-start gap-1 pb-2">
+              {/* Desktop Connection Line */}
+              <div className="absolute top-6 left-8 right-8 h-[1px] hidden md:block" 
+                style={{ 
+                  background: "linear-gradient(90deg, transparent, rgba(31,138,112,0.15) 15%, rgba(31,138,112,0.15) 85%, transparent)",
+                  zIndex: 0 
+                }} />
+              
               {QUICK_STARTS.map((s, i) => (
-                <div key={s.step} className="flex items-start gap-0 flex-shrink-0">
-                  <div className="flex flex-col items-center w-36">
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-2"
-                      style={{ background: "linear-gradient(135deg,rgba(31,138,112,0.12),rgba(31,138,112,0.05))", border: "1px solid rgba(31,138,112,0.15)" }}>
-                      <s.icon className="w-4 h-4" style={{ color: "#1F8A70" }} />
+                <div key={s.step} className="relative z-10 flex flex-col items-center flex-1">
+                  {/* Icon & Step Circle */}
+                  <div className="relative mb-3">
+                    <motion.div 
+                      whileHover={{ scale: 1.05 }}
+                      className="w-12 h-12 rounded-2xl flex items-center justify-center transition-all bg-white shadow-sm"
+                      style={{ border: "1px solid rgba(0,0,0,0.06)" }}>
+                      <s.icon className="w-5 h-5" style={{ color: "#1F8A70" }} />
+                    </motion.div>
+                    <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black text-white shadow-md"
+                      style={{ background: "linear-gradient(135deg, #1F8A70, #0F3D3E)", border: "1.5px solid #fff" }}>
+                      {s.step}
                     </div>
-                    <div className="text-[10px] font-black uppercase tracking-wider mb-0.5 text-center" style={{ color: "#09090b", fontFamily: "'Outfit',sans-serif" }}>{s.title}</div>
-                    <div className="text-[10px] text-center leading-tight" style={{ color: "#71717a" }}>{s.desc}</div>
                   </div>
+
+                  {/* Step Info */}
+                  <div className="text-center px-1">
+                    <div className="text-[10px] font-black uppercase tracking-wider mb-1" 
+                      style={{ color: "#09090b", fontFamily: "'Outfit',sans-serif" }}>
+                      {s.title}
+                    </div>
+                    <div className="text-[9px] font-medium leading-tight text-zinc-400 line-clamp-2">
+                      {s.desc}
+                    </div>
+                  </div>
+
+                  {/* Tablet/Mobile Arrow */}
                   {i < QUICK_STARTS.length - 1 && (
-                    <ArrowRight className="w-3.5 h-3.5 mt-2.5 mx-1 flex-shrink-0" style={{ color: "#94a3b8" }} />
+                    <div className="md:hidden mt-2">
+                      <ChevronRight className="w-3.5 h-3.5 text-zinc-300" />
+                    </div>
                   )}
                 </div>
               ))}

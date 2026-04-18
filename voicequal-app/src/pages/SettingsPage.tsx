@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import {
   Bell, Shield, Zap, Globe, Sliders, Save, CheckCircle2,
-  User, Key, Palette, Phone, Brain, ChevronRight, Sparkles,
+  User, Key, Phone, Brain, ChevronRight, Sparkles,
 } from "lucide-react";
 import { useState } from "react";
 import DashboardLayout from "../components/DashboardLayout";
@@ -34,7 +34,6 @@ const TABS = [
   { id: "calling",      label: "Calling",       icon: Phone    },
   { id: "ai",           label: "AI & Scoring",  icon: Brain    },
   { id: "security",     label: "Security",      icon: Shield   },
-  { id: "appearance",   label: "Appearance",    icon: Palette  },
   { id: "integrations", label: "Integrations",  icon: Globe    },
 ];
 
@@ -48,7 +47,6 @@ export default function SettingsPage() {
     callRecording: true, sentimentAnalysis: true, multiLanguage: false,
     autoTranscript: true, bantThreshold: 7,
     twoFactor: false, sessionTimeout: true,
-    darkMode: false, compactView: false, animations: true,
     elevenLabsSync: true, groqScoring: true, webhooks: false,
   });
 
@@ -221,14 +219,6 @@ export default function SettingsPage() {
             <InputField label="Current Password" type="password" placeholder="••••••••" />
             <InputField label="New Password" type="password" placeholder="••••••••" />
           </div>
-        </SectionCard>
-      );
-
-      case "appearance": return (
-        <SectionCard title="Display Preferences" icon={Palette} color="#A67C2E">
-          <ToggleRow label="Dark Mode" desc="Switch the dashboard to a dark theme." k="darkMode" color="#A67C2E" />
-          <ToggleRow label="Compact View" desc="Reduce spacing for a denser information layout." k="compactView" color="#A67C2E" />
-          <ToggleRow label="Motion & Animations" desc="Enable card transitions and micro-animations." k="animations" color="#A67C2E" />
         </SectionCard>
       );
 

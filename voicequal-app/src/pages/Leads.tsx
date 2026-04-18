@@ -86,6 +86,8 @@ export default function Leads() {
   const [allLeads, setAllLeads] = useState<Lead[]>(MOCK_LEADS);
   const [loading, setLoading] = useState(false);
   const [hasLive, setHasLive] = useState(false);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("ALL");
 
   const fetchLeads = async () => {
     setLoading(true);
@@ -122,8 +124,9 @@ export default function Leads() {
 
   const filtered = allLeads.filter((l: Lead) => {
     const matchSearch = l.name.toLowerCase().includes(search.toLowerCase()) || l.company.toLowerCase().includes(search.toLowerCase());
-    const matchFilter = filter === "ALL" || l.bucket === filter || (!l.bucket && filter === "PENDING");
-    return matchSearch && matchFilter;
+    const matchBucket = filter === "ALL" || l.bucket === filter;
+    const matchStatus = statusFilter === "ALL" || l.status === statusFilter;
+    return matchSearch && matchBucket && matchStatus;
   });
 
   const chips = [
@@ -188,8 +191,8 @@ export default function Leads() {
           ))}
         </motion.div>
 
-        {/* Search */}
-        <motion.div {...fadeUp(0.12)} className="flex gap-3">
+        {/* Search & Filter */}
+        <motion.div {...fadeUp(0.12)} className="flex gap-3 relative">
           <div className="flex-1 relative">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "#94a3b8" }} />
             <input
@@ -205,11 +208,71 @@ export default function Leads() {
               }}
             />
           </div>
-          <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider"
-            style={{ background: "rgba(255,255,255,0.8)", border: "1px solid rgba(0,0,0,0.07)", color: "#71717a" }}>
-            <Filter className="w-3.5 h-3.5" /> Filter
-          </motion.button>
+          <div className="relative">
+            <motion.button 
+              onClick={() => setIsFilterOpen(!isFilterOpen)}
+              whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all"
+              style={{ 
+                background: isFilterOpen ? "rgba(31,138,112,0.1)" : "rgba(255,255,255,0.8)", 
+                border: isFilterOpen ? "1px solid rgba(31,138,112,0.3)" : "1px solid rgba(0,0,0,0.07)", 
+                color: isFilterOpen ? "#1F8A70" : "#71717a" 
+              }}>
+              <Filter className="w-3.5 h-3.5" /> Filter
+              {(filter !== "ALL" || statusFilter !== "ALL") && (
+                <span className="w-1.5 h-1.5 rounded-full bg-[#1F8A70] ml-0.5" />
+              )}
+            </motion.button>
+
+            {/* Filter Dropdown */}
+            {isFilterOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setIsFilterOpen(false)} />
+                <motion.div 
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  className="absolute right-0 mt-2 w-64 rounded-2xl p-4 z-50 shadow-2xl overflow-hidden"
+                  style={{ background: "rgba(255,255,255,0.95)", border: "1px solid rgba(0,0,0,0.08)", backdropFilter: "blur(12px)" }}>
+                  
+                  <div className="text-[9px] font-black uppercase tracking-widest mb-3 text-zinc-400">By Outcome</div>
+                  <div className="grid grid-cols-2 gap-2 mb-4">
+                    {["ALL", "HOT", "WARM", "COLD"].map(o => (
+                      <button key={o} onClick={() => setFilter(o)}
+                        className="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest text-left transition-all"
+                        style={{ 
+                          background: filter === o ? "rgba(31,138,112,0.1)" : "rgba(0,0,0,0.02)",
+                          color: filter === o ? "#1F8A70" : "#71717a",
+                          border: filter === o ? "1px solid rgba(31,138,112,0.2)" : "1px solid transparent"
+                        }}>
+                        {o}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="text-[9px] font-black uppercase tracking-widest mb-3 text-zinc-400">By Status</div>
+                  <div className="space-y-1">
+                    {["ALL", "COMPLETED", "CALLING", "FAILED"].map(s => (
+                      <button key={s} onClick={() => setStatusFilter(s)}
+                        className="w-full px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest text-left transition-all flex items-center justify-between"
+                        style={{ 
+                          background: statusFilter === s ? "rgba(212,175,55,0.1)" : "transparent",
+                          color: statusFilter === s ? "#A67C2E" : "#71717a"
+                        }}>
+                        {s}
+                        {statusFilter === s && <div className="w-1 h-1 rounded-full bg-[#A67C2E]" />}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button 
+                    onClick={() => { setFilter("ALL"); setStatusFilter("ALL"); setIsFilterOpen(false); }}
+                    className="w-full mt-4 pt-3 text-[9px] font-black uppercase tracking-widest text-center border-t border-zinc-100 text-zinc-400 hover:text-zinc-600">
+                    Reset All Filters
+                  </button>
+                </motion.div>
+              </>
+            )}
+          </div>
         </motion.div>
 
         {/* Table */}
