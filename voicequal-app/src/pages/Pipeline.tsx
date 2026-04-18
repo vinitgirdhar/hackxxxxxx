@@ -89,11 +89,6 @@ function stageFor(bantScore: number | null): Stage {
 function fmtVal(v: number) {
   return v > 0 ? `₹${v.toFixed(1)}L` : "—";
 }
-function fmtDur(s: number) {
-  if (!s) return "—";
-  const m = Math.floor(s / 60), sec = s % 60;
-  return `${m}m ${sec}s`;
-}
 
 // Priority badge config
 const PRIORITY: Record<string, { label: string; color: string; bg: string }> = {
@@ -548,12 +543,4 @@ export default function Pipeline() {
       </div>
     </DashboardLayout>
   );
-}
-
-// tiny helper to avoid import
-function rgba(hex: string, a: number) {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `rgba(${r},${g},${b},${a})`;
 }

@@ -460,7 +460,7 @@ export default function Analytics() {
           </div>
 
           {/* Stat summary strip */}
-          <div className="grid grid-cols-4 divide-x" style={{ borderBottom: "1px solid rgba(0,0,0,0.05)", divideColor: "rgba(0,0,0,0.05)" }}>
+          <div className="grid grid-cols-4 divide-x" style={{ borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
             {[
               { label: "Total Calls", value: weeklyData.reduce((s, d) => s + d.calls, 0), color: "#818cf8" },
               { label: "Hot Leads",   value: weeklyData.reduce((s, d) => s + d.hot,   0), color: "#1F8A70" },

@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import {
   Shield, Zap, Globe, Save, CheckCircle2,
-  User, Key, ChevronRight, Sparkles,
+  User, ChevronRight, Sparkles,
 } from "lucide-react";
 import { useState } from "react";
 import DashboardLayout from "../components/DashboardLayout";

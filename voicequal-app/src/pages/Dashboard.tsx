@@ -4,13 +4,11 @@ import {
   BarChart3, Gem, RefreshCw, Zap, Sparkles,
   Search, Volume2, Clock, CalendarDays,
   ArrowUpRight, Building2, Mail, ChevronDown,
-  TrendingUp, Star, CheckCircle2, AlertCircle,
-  DollarSign, Tag, MoreHorizontal, Plus,
+  DollarSign,
 } from "lucide-react";
 import { useRef, useState, useCallback, useEffect } from "react";
 import { useLocation } from "wouter";
 import DashboardLayout from "../components/DashboardLayout";
-import { triggerCall } from "../api/triggerCall";
 import { MOCK_CALLS } from "../lib/mockCalls";
 
 // ElevenLabs API key
@@ -192,7 +190,7 @@ function fmtInr(n: number) {
   return `₹${(n / 1000).toFixed(0)}K`;
 }
 
-function CRMPanel({ panelRef }: { panelRef?: React.RefObject<HTMLDivElement> }) {
+function CRMPanel({ panelRef }: { panelRef?: React.RefObject<HTMLDivElement | null> }) {
   const [activeStage, setActiveStage] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -564,7 +562,7 @@ function ToastStack({ toasts, remove }: { toasts: ToastItem[]; remove: (id: numb
 }
 
 // ─── Quick Actions ────────────────────────────────────────────────────────
-function QuickActions({ liveLeads, crmRef }: { liveLeads: LiveLead[]; crmRef: React.RefObject<HTMLDivElement> }) {
+function QuickActions({ liveLeads, crmRef }: { liveLeads: LiveLead[]; crmRef: React.RefObject<HTMLDivElement | null> }) {
   const [, navigate] = useLocation();
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [busyIdx, setBusyIdx] = useState<number | null>(null);
@@ -644,7 +642,7 @@ function QuickActions({ liveLeads, crmRef }: { liveLeads: LiveLead[]; crmRef: Re
 }
 
 // ─── Live Lead Row ────────────────────────────────────────────────────────
-function LiveLeadRow({ lead }: { lead: LiveLead }) {
+export function LiveLeadRow({ lead }: { lead: LiveLead }) {
   const [expanded, setExpanded] = useState(false);
   const [audioState, setAudioState] = useState<'idle' | 'loading' | 'playing' | 'error'>('idle');
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -759,10 +757,7 @@ export default function Dashboard() {
   const [overview, setOverview] = useState<Overview>({ totalLeads: 0, callsInitiated: 0, hotLeads: 0, warmLeads: 0, coldLeads: 0, conversionRate: 0, topScore: 0 });
   const [liveLeads, setLiveLeads] = useState<LiveLead[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [callLoading, setCallLoading] = useState(false);
   const crmRef = useRef<HTMLDivElement>(null);
-  const [phoneNum, setPhoneNum] = useState('+919999999999');
 
   useEffect(() => {
     // Seed from mock data immediately
@@ -823,20 +818,11 @@ export default function Dashboard() {
     })();
   }, []);
 
-  const filteredLeads = liveLeads.filter(l =>
-    !search || l.name.toLowerCase().includes(search.toLowerCase()) || l.company.toLowerCase().includes(search.toLowerCase())
-  );
-
   const overviewValues: Record<string, number> = {
     totalLeads: overview.totalLeads,
     callsInitiated: overview.callsInitiated,
     hotLeads: overview.hotLeads,
     conversionRate: overview.conversionRate,
-  };
-
-  const handleTriggerCall = async () => {
-    setCallLoading(true);
-    try { await triggerCall(phoneNum); } catch { /* silent */ } finally { setCallLoading(false); }
   };
 
   return (
