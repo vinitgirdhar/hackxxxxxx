@@ -164,7 +164,7 @@ function LeadCard({
       </motion.div>
 
       {/* Name + Priority */}
-      <div className="flex items-center gap-2.5 mb-2.5 pr-12">
+      <div className="flex items-center gap-2.5 mb-2.5 pr-16">
         <motion.div
           className="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black text-white shrink-0"
           style={{ background: stageGradient }}
@@ -460,21 +460,25 @@ export default function Pipeline() {
 
         {/* Kanban board */}
         <motion.div {...fadeUp(0.14)}
-          className="flex gap-4 overflow-x-auto pb-6"
-          style={{ minHeight: 460 }}
+          className="grid gap-4 pb-6"
+          style={{
+            minHeight: 460,
+            gridTemplateColumns: filterStage === "ALL"
+              ? `repeat(${stages.length}, minmax(0, 1fr))`
+              : "minmax(0, 1fr)",
+          }}
         >
           {stages
             .filter(s => filterStage === "ALL" || s.key === filterStage)
             .map((stage, si) => {
               const stageLeads = displayed
                 .filter(l => l.stage === stage.key)
-                .sort((a, b) => (b.score ?? 0) - (a.score ?? 0)); // AI priority order
+                .sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
               const stageValue = stageLeads.reduce((s, l) => s + l.premiumValue, 0);
 
               return (
                 <div key={stage.key}
-                  className="shrink-0 flex flex-col gap-2.5"
-                  style={{ width: filterStage === "ALL" ? 250 : "min(420px,100%)" }}
+                  className="flex flex-col gap-2.5 min-w-0"
                 >
                   {/* Column header */}
                   <div className="rounded-2xl px-4 py-3.5"
