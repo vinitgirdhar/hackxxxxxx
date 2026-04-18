@@ -1,4 +1,5 @@
-import { Route, Switch } from "wouter";
+import { Route, Switch, useLocation } from "wouter";
+import { AnimatePresence, motion } from "framer-motion";
 import LandingPage from "./pages/LandingPage";
 import Dashboard from "./pages/Dashboard";
 import Leads from "./pages/Leads";
@@ -9,27 +10,47 @@ import Pipeline from "./pages/Pipeline";
 import SettingsPage from "./pages/SettingsPage";
 import HelpDocs from "./pages/HelpDocs";
 
-export default function App() {
+function PageWrapper({ children }: { children: React.ReactNode }) {
   return (
-    <Switch>
-      <Route path="/" component={LandingPage} />
-      <Route path="/dashboard" component={Dashboard} />
-      <Route path="/leads" component={Leads} />
-      <Route path="/leads/:id" component={LeadDetail} />
-      <Route path="/calls" component={Calls} />
-      <Route path="/analytics" component={Analytics} />
-      <Route path="/pipeline" component={Pipeline} />
-      <Route path="/settings" component={SettingsPage} />
-      <Route path="/help" component={HelpDocs} />
-      <Route>
-        <div className="min-h-screen flex items-center justify-center" style={{ background: "#f6faf9" }}>
-          <div className="text-center">
-            <div className="text-6xl font-black mb-4" style={{ color: "#D4AF37", fontFamily: "'Outfit', sans-serif" }}>404</div>
-            <div className="text-lg font-bold mb-4" style={{ color: "#71717a" }}>Page not found</div>
-            <a href="/" className="text-emerald-600 font-black hover:underline uppercase tracking-widest text-sm">← Go home</a>
-          </div>
-        </div>
-      </Route>
-    </Switch>
+    <motion.div
+      initial={{ opacity: 0, x: 12 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.22, ease: [0.25, 0.46, 0.45, 0.94] }}
+      style={{ position: "absolute", inset: 0, minHeight: "100vh", width: "100%" }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+export default function App() {
+  const [location] = useLocation();
+
+  return (
+    <AnimatePresence mode="sync">
+      <PageWrapper key={location}>
+        <Switch>
+          <Route path="/" component={LandingPage} />
+          <Route path="/dashboard" component={Dashboard} />
+          <Route path="/leads" component={Leads} />
+          <Route path="/leads/:id" component={LeadDetail} />
+          <Route path="/calls" component={Calls} />
+          <Route path="/analytics" component={Analytics} />
+          <Route path="/pipeline" component={Pipeline} />
+          <Route path="/settings" component={SettingsPage} />
+          <Route path="/help" component={HelpDocs} />
+          <Route>
+            <div className="min-h-screen flex items-center justify-center" style={{ background: "#f6faf9" }}>
+              <div className="text-center">
+                <div className="text-6xl font-black mb-4" style={{ color: "#D4AF37", fontFamily: "'Outfit', sans-serif" }}>404</div>
+                <div className="text-lg font-bold mb-4" style={{ color: "#71717a" }}>Page not found</div>
+                <a href="/" className="text-emerald-600 font-black hover:underline uppercase tracking-widest text-sm">← Go home</a>
+              </div>
+            </div>
+          </Route>
+        </Switch>
+      </PageWrapper>
+    </AnimatePresence>
   );
 }

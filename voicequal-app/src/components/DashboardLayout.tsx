@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion"; // AnimatePresence still used for breadcrumb
 import {
   LayoutDashboard, UserCheck, PhoneCall, BarChart3,
   Activity, Settings, HelpCircle, LogOut, ChevronRight,
@@ -150,10 +150,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   {isActive && (
                     <motion.div
                       layoutId="nav-active-bar"
-                      className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full pointer-events-none"
-                      style={{ backgroundColor: "#28B893" }}
+                      className="absolute left-0 top-0 bottom-0 w-[3px] rounded-r-full pointer-events-none flex items-center"
                       transition={{ type: "spring", stiffness: 380, damping: 34 }}
-                    />
+                    >
+                      <div className="w-full rounded-r-full" style={{
+                        height: "60%",
+                        background: "linear-gradient(180deg, #28B893, #1F8A70)",
+                        boxShadow: "2px 0 10px rgba(40,184,147,0.6)",
+                      }} />
+                    </motion.div>
                   )}
                   <motion.button
                     onClick={() => navigate(href)}
@@ -226,14 +231,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </motion.aside>
 
       {/* ── Page Area ── */}
-      <div className="flex-1 flex flex-col relative z-10" style={{ marginLeft: 248, zoom: 0.9 }}>
+      <div className="flex-1 flex flex-col relative z-10" style={{ marginLeft: 248 }}>
 
         {/* Topbar */}
         <motion.header
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-          className="sticky top-0 z-30 flex items-center justify-between px-8 h-14"
+          className="sticky top-0 z-30 flex items-center justify-between px-10 h-14"
           style={{
             background: "rgba(255,255,255,0.97)",
             backdropFilter: "blur(16px)",
@@ -267,23 +272,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </AnimatePresence>
           </div>
 
-          {/* Right: status badges */}
+          {/* Right: avatar only */}
           <div className="flex items-center gap-3">
-            {/* Live indicator */}
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl"
-              style={{ background: "rgba(31,138,112,0.06)", border: "1px solid rgba(31,138,112,0.15)" }}>
-              <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: "#1F8A70" }} />
-              <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: "#1F8A70" }}>Live</span>
-            </div>
-
-            {/* Hot leads pulse */}
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl"
-              style={{ background: "rgba(212,175,55,0.06)", border: "1px solid rgba(212,175,55,0.15)" }}>
-              <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: "#A67C2E" }}>312 Hot</span>
-              <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: "#D4AF37" }} />
-            </div>
-
-            {/* Avatar */}
             <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-black gold-border cursor-pointer hover:scale-105 transition-transform"
               style={{ background: "linear-gradient(135deg,#1F8A70,#0F3D3E)" }}>
               A
@@ -295,18 +285,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="h-[1px] gold-shimmer opacity-40 sticky top-14 z-30" />
 
         <main ref={mainRef} className="flex-1 overflow-y-auto">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={location}
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-              className="px-8 py-8 min-h-full"
-            >
-              {children}
-            </motion.div>
-          </AnimatePresence>
+          <div className="px-10 py-8 min-h-full max-w-screen-2xl">
+            {children}
+          </div>
         </main>
       </div>
     </div>
