@@ -205,9 +205,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </div>
 
-        {/* User */}
         <div className="px-3 py-3 relative z-10" style={{ borderTop: "1px solid rgba(212,175,55,0.08)" }}>
           <motion.div
+            onClick={() => navigate("/")}
             whileHover={{ scale: 1.01 }}
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer group transition-all"
             style={{ border: "1px solid rgba(255,255,255,0.04)" }}
@@ -226,7 +226,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </motion.aside>
 
       {/* ── Page Area ── */}
-      <div className="flex-1 flex flex-col relative z-10" style={{ marginLeft: 248 }}>
+      <div className="flex-1 flex flex-col relative z-10" style={{ marginLeft: 248, zoom: 0.9 }}>
 
         {/* Topbar */}
         <motion.header

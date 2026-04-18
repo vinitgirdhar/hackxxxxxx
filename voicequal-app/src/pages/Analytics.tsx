@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { TrendingUp, TrendingDown, Download } from "lucide-react";
 import DashboardLayout from "../components/DashboardLayout";
 import { useRef, useCallback, useState } from "react";
 
@@ -295,19 +295,138 @@ export default function Analytics() {
     { label: "Cold",        color: "#94a3b8" },
   ];
 
+  const generatePDF = () => {
+    const totalCalls = weeklyData.reduce((s, d) => s + d.calls, 0);
+    const totalHot   = weeklyData.reduce((s, d) => s + d.hot,   0);
+    const totalWarm  = weeklyData.reduce((s, d) => s + d.warm,  0);
+    const totalCold  = weeklyData.reduce((s, d) => s + d.cold,  0);
+    const now = new Date().toLocaleDateString("en-IN", { day:"2-digit", month:"long", year:"numeric" });
+
+    const rowsHTML = [...weeklyData]
+      .sort((a, b) => b.hot - a.hot)
+      .map((d, i) => {
+        const pct = Math.round((d.hot / d.calls) * 100);
+        return `<tr style="background:${i % 2 === 0 ? '#f9fafb' : '#fff'}">
+          <td style="padding:10px 14px;font-weight:800;color:#374151">${i + 1}</td>
+          <td style="padding:10px 14px;font-weight:700;color:#374151">${d.day}</td>
+          <td style="padding:10px 14px;text-align:right;font-weight:700">${d.calls}</td>
+          <td style="padding:10px 14px;text-align:right;font-weight:800;color:#1F8A70">${d.hot}</td>
+          <td style="padding:10px 14px;text-align:right;font-weight:700;color:#D4AF37">${d.warm}</td>
+          <td style="padding:10px 14px;text-align:right;font-weight:700;color:#94a3b8">${d.cold}</td>
+          <td style="padding:10px 14px;text-align:right;font-weight:800;color:#0F3D3E">${pct}%</td>
+        </tr>`;
+      }).join("");
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+      <title>VoiceQual Analytics Report</title>
+      <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&display=swap');
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Outfit',sans-serif; background:#fff; color:#111; padding:40px 48px; }
+        .logo { display:flex; align-items:center; gap:10px; margin-bottom:32px; }
+        .logo-mark { width:36px; height:36px; border-radius:10px;
+          background:linear-gradient(135deg,#1F8A70,#0F3D3E);
+          display:flex; align-items:center; justify-content:center;
+          color:white; font-weight:900; font-size:16px; }
+        .logo-name { font-size:20px; font-weight:900; letter-spacing:-0.5px; text-transform:uppercase; }
+        .logo-name span { color:#1F8A70; }
+        .report-meta { font-size:12px; color:#9ca3af; margin-left:auto; }
+        h1 { font-size:26px; font-weight:900; text-transform:uppercase; letter-spacing:-0.5px; color:#09090b; }
+        .subtitle { font-size:13px; color:#71717a; margin-top:6px; margin-bottom:28px; }
+        .divider { border:none; border-top:1px solid #e5e7eb; margin:24px 0; }
+        .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:28px; }
+        .kpi-card { border:1px solid #e5e7eb; border-radius:12px; padding:16px 18px; background:#fafafa; }
+        .kpi-label { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:0.12em; color:#9ca3af; margin-bottom:6px; }
+        .kpi-value { font-size:24px; font-weight:900; color:#09090b; }
+        .kpi-unit { font-size:14px; font-weight:600; color:#9ca3af; }
+        .kpi-change { font-size:11px; font-weight:700; margin-top:4px; }
+        .summary-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:0; border:1px solid #e5e7eb; border-radius:12px; overflow:hidden; margin-bottom:28px; }
+        .summary-cell { padding:14px 18px; border-right:1px solid #e5e7eb; }
+        .summary-cell:last-child { border-right:none; }
+        .summary-cell .label { font-size:9px; font-weight:900; text-transform:uppercase; letter-spacing:0.14em; color:#9ca3af; }
+        .summary-cell .val { font-size:22px; font-weight:900; margin-top:2px; }
+        h2 { font-size:13px; font-weight:900; text-transform:uppercase; letter-spacing:0.08em; color:#09090b; margin-bottom:14px; }
+        table { width:100%; border-collapse:collapse; border-radius:12px; overflow:hidden; border:1px solid #e5e7eb; font-size:13px; }
+        thead tr { background:linear-gradient(135deg,#1F8A70,#0F3D3E); color:#fff; }
+        thead th { padding:11px 14px; text-align:left; font-weight:800; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; }
+        thead th:not(:first-child) { text-align:right; }
+        .footer { margin-top:32px; text-align:center; font-size:11px; color:#9ca3af; }
+        @media print { body { padding:20px 28px; } }
+      </style>
+    </head><body>
+      <div class="logo">
+        <div class="logo-mark">V</div>
+        <div class="logo-name">Voice<span>Qual</span> <span style="color:#D4AF37;font-size:11px;font-weight:700;">AI PLATFORM</span></div>
+        <div class="report-meta">Analytics Report &nbsp;·&nbsp; ${now}</div>
+      </div>
+
+      <h1>Analytics Report</h1>
+      <p class="subtitle">Weekly call performance &amp; lead qualification metrics — <strong style="color:#1F8A70">${totalHot} hot leads</strong> generated this week.</p>
+
+      <hr class="divider" />
+
+      <div class="kpi-grid">
+        ${kpis.map(k => `<div class="kpi-card">
+          <div class="kpi-label">${k.label}</div>
+          <div class="kpi-value">${k.value}<span class="kpi-unit">${k.unit}</span></div>
+          <div class="kpi-change" style="color:${k.up ? '#1F8A70' : '#DC2626'}">${k.change} vs last week</div>
+        </div>`).join("")}
+      </div>
+
+      <h2>Weekly Summary</h2>
+      <div class="summary-grid">
+        <div class="summary-cell"><div class="label">Total Calls</div><div class="val" style="color:#818cf8">${totalCalls.toLocaleString()}</div></div>
+        <div class="summary-cell"><div class="label">Hot Leads</div><div class="val" style="color:#1F8A70">${totalHot.toLocaleString()}</div></div>
+        <div class="summary-cell"><div class="label">Warm Leads</div><div class="val" style="color:#D4AF37">${totalWarm.toLocaleString()}</div></div>
+        <div class="summary-cell"><div class="label">Cold Leads</div><div class="val" style="color:#94a3b8">${totalCold.toLocaleString()}</div></div>
+      </div>
+
+      <h2>Daily Breakdown — Hot Lead Rate</h2>
+      <table>
+        <thead><tr>
+          <th>#</th><th>Day</th><th>Total Calls</th><th>HOT</th><th>Warm</th><th>Cold</th><th>Hot Rate</th>
+        </tr></thead>
+        <tbody>${rowsHTML}</tbody>
+      </table>
+
+      <div class="footer">VoiceQual AI Platform &nbsp;·&nbsp; Generated ${now} &nbsp;·&nbsp; Confidential</div>
+
+      <script>window.onload = () => { window.print(); }<\/script>
+    </body></html>`;
+
+    const win = window.open("", "_blank");
+    if (win) { win.document.open(); win.document.write(html); win.document.close(); }
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
 
         {/* Header */}
-        <motion.div {...fadeUp(0)}>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="crown-badge">Performance Metrics</div>
+        <motion.div {...fadeUp(0)} className="flex items-start justify-between flex-wrap gap-4 print-hide">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="crown-badge">Performance Metrics</div>
+            </div>
+            <h1 className="text-3xl font-black text-zinc-950 tracking-tight uppercase" style={{ fontFamily: "'Outfit', sans-serif" }}>Analytics</h1>
+            <p className="text-sm mt-1.5 font-medium" style={{ color: "#71717a" }}>
+              Performance metrics and trends — <span style={{ color: "#1F8A70", fontWeight: 700 }}>{totalByDay} hot leads</span> generated this week.
+            </p>
           </div>
-          <h1 className="text-3xl font-black text-zinc-950 tracking-tight uppercase" style={{ fontFamily: "'Outfit', sans-serif" }}>Analytics</h1>
-          <p className="text-sm mt-1.5 font-medium" style={{ color: "#71717a" }}>
-            Performance metrics and trends — <span style={{ color: "#1F8A70", fontWeight: 700 }}>{totalByDay} hot leads</span> generated this week.
-          </p>
+          
+          {/* Download PDF button */}
+          <motion.button
+            whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+            onClick={generatePDF}
+            className="flex items-center gap-2.5 px-6 py-3 rounded-2xl text-[13px] font-black text-white uppercase tracking-wider"
+            style={{
+              background: "linear-gradient(135deg,#1F8A70,#0F3D3E)",
+              boxShadow: "0 8px 24px rgba(31,138,112,0.25), inset 0 1px 0 rgba(255,255,255,0.1)",
+              fontFamily: "'Outfit',sans-serif",
+            }}
+          >
+            <Download className="w-4 h-4" /> Download PDF
+          </motion.button>
         </motion.div>
 
         {/* KPI cards */}

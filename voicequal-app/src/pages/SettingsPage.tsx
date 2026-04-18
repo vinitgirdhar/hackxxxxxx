@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import {
-  Bell, Shield, Zap, Globe, Sliders, Save, CheckCircle2,
-  User, Key, Phone, Brain, ChevronRight, Sparkles,
+  Shield, Zap, Globe, Save, CheckCircle2,
+  User, Key, ChevronRight, Sparkles,
 } from "lucide-react";
 import { useState } from "react";
 import DashboardLayout from "../components/DashboardLayout";
@@ -28,13 +28,10 @@ function Toggle({ value, onChange, color = "#1F8A70" }: { value: boolean; onChan
 }
 
 const TABS = [
-  { id: "profile",      label: "Profile",       icon: User     },
-  { id: "automation",   label: "Automation",    icon: Zap      },
-  { id: "notifications",label: "Notifications", icon: Bell     },
-  { id: "calling",      label: "Calling",       icon: Phone    },
-  { id: "ai",           label: "AI & Scoring",  icon: Brain    },
-  { id: "security",     label: "Security",      icon: Shield   },
-  { id: "integrations", label: "Integrations",  icon: Globe    },
+  { id: "profile",      label: "Profile",       icon: User    },
+  { id: "automation",   label: "Automation",    icon: Zap     },
+  { id: "security",     label: "Security",      icon: Shield  },
+  { id: "integrations", label: "Integrations",  icon: Globe   },
 ];
 
 export default function SettingsPage() {
@@ -43,9 +40,8 @@ export default function SettingsPage() {
 
   const [settings, setSettings] = useState({
     autoCall: true, bantScoring: true, crmSync: true,
-    notifications: true, doNotDisturb: false, emailDigest: true,
-    callRecording: true, sentimentAnalysis: true, multiLanguage: false,
-    autoTranscript: true, bantThreshold: 7,
+    callRecording: true,
+    autoTranscript: true,
     twoFactor: false, sessionTimeout: true,
     elevenLabsSync: true, groqScoring: true, webhooks: false,
   });
@@ -123,28 +119,6 @@ export default function SettingsPage() {
               <InputField label="Company" defaultValue="VoiceQual Inc." />
             </div>
           </SectionCard>
-          <SectionCard title="API Keys" icon={Key} color="#D4AF37">
-            <div className="py-4 space-y-3">
-              {[
-                { label: "ElevenLabs API Key", val: "f86cd3c5...b94f103" },
-                { label: "Groq API Key",       val: "gsk_••••••••••••••" },
-                { label: "Sarvam AI Key",      val: "••••••••••••••••••" },
-              ].map(({ label, val }) => (
-                <div key={label}>
-                  <div className="text-[10px] font-black uppercase tracking-widest mb-1.5" style={{ color: "#94a3b8" }}>{label}</div>
-                  <div className="flex gap-2">
-                    <input readOnly defaultValue={val}
-                      className="flex-1 px-3.5 py-2.5 rounded-xl text-sm font-mono outline-none"
-                      style={{ background: "rgba(0,0,0,0.03)", border: "1px solid rgba(212,175,55,0.15)", color: "#09090b" }} />
-                    <button className="px-3.5 py-2.5 rounded-xl text-xs font-bold transition-colors"
-                      style={{ background: "rgba(31,138,112,0.08)", color: "#1F8A70", border: "1px solid rgba(31,138,112,0.15)" }}>
-                      Edit
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </SectionCard>
         </div>
       );
 
@@ -158,55 +132,6 @@ export default function SettingsPage() {
           <SectionCard title="CRM & Sync" icon={Globe} color="#A67C2E">
             <ToggleRow label="CRM Auto-Sync" desc="Push qualified leads to your CRM after every call." k="crmSync" color="#A67C2E" />
             <ToggleRow label="Webhook Triggers" desc="Fire webhooks on HOT lead qualification events." k="webhooks" color="#A67C2E" />
-          </SectionCard>
-        </div>
-      );
-
-      case "notifications": return (
-        <SectionCard title="Notification Preferences" icon={Bell} color="#D4AF37">
-          <ToggleRow label="HOT Lead Alerts" desc="Get notified instantly when a lead scores above threshold." k="notifications" color="#D4AF37" />
-          <ToggleRow label="Daily Email Digest" desc="Receive a morning summary of yesterday's call performance." k="emailDigest" color="#D4AF37" />
-          <ToggleRow label="Do Not Disturb" desc="Pause all notifications outside business hours." k="doNotDisturb" color="#D4AF37" />
-        </SectionCard>
-      );
-
-      case "calling": return (
-        <div className="space-y-4">
-          <SectionCard title="Calling Window" icon={Phone} color="#0F3D3E">
-            <div className="py-4">
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                <InputField label="Start Time" defaultValue="09:00 AM" />
-                <InputField label="End Time" defaultValue="06:00 PM" />
-              </div>
-              <InputField label="Max Concurrent Calls" defaultValue="5" type="number" />
-              <InputField label="Retry Attempts (no-answer)" defaultValue="3" type="number" />
-            </div>
-          </SectionCard>
-          <SectionCard title="Recording" icon={Shield} color="#1F8A70">
-            <ToggleRow label="Call Recording" desc="Record all calls for compliance review and scoring." k="callRecording" />
-          </SectionCard>
-        </div>
-      );
-
-      case "ai": return (
-        <div className="space-y-4">
-          <SectionCard title="AI Engine" icon={Brain} color="#1F8A70">
-            <ToggleRow label="Sentiment Analysis" desc="Detect tone and objections during live calls." k="sentimentAnalysis" />
-            <ToggleRow label="Multi-Language Mode" desc="Enable Hindi, Tamil, and Telugu support." k="multiLanguage" />
-            <ToggleRow label="Groq LLM Scoring" desc="Use Groq LLaMA 3 for deep BANT analysis." k="groqScoring" />
-          </SectionCard>
-          <SectionCard title="Scoring Thresholds" icon={Sliders} color="#D4AF37">
-            <div className="py-4">
-              <label className="text-[10px] font-black uppercase tracking-widest block mb-2" style={{ color: "#94a3b8" }}>
-                HOT Lead Score Threshold — <span style={{ color: "#1F8A70" }}>{settings.bantThreshold}.0 / 10</span>
-              </label>
-              <input type="range" min={5} max={10} value={settings.bantThreshold}
-                onChange={e => setSettings(s => ({ ...s, bantThreshold: +e.target.value }))}
-                className="w-full accent-emerald-600 cursor-pointer" />
-              <div className="flex justify-between text-[10px] font-bold mt-1" style={{ color: "#94a3b8" }}>
-                <span>5 — Low</span><span>7 — Default</span><span>10 — Max</span>
-              </div>
-            </div>
           </SectionCard>
         </div>
       );

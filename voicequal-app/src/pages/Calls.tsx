@@ -225,7 +225,7 @@ function ExpandedPanel({ callId, bant, leadName }: { callId: string; bant: BANTS
     if (!bant) return;
     setTelegramSending(true);
     try {
-      const text = `🔔 New Follow-Up Required\n\nComplaint ID: ${callId}\nLead: ${leadName}\nStatus: ${bant.label} (Score: ${bant.total})\n\nSummary:\n${bant.summary || summary || "No summary available"}\n\nPlease review this lead in the dashboard.`;
+      const text = `🔔 New Follow-Up Required\n\nCall ID: ${callId}\nLead: ${leadName}\nStatus: ${bant.label} (Score: ${bant.total})\n\nSummary:\n${bant.summary || summary || "No summary available"}\n\nPlease review this lead in the dashboard.`;
       const res = await fetch("https://api.telegram.org/bot8675669112:AAF0r0ESeMx7mziP2PUqos-HiY2CMIfXWZc/sendMessage", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -443,7 +443,7 @@ function ExpandedPanel({ callId, bant, leadName }: { callId: string; bant: BANTS
                     ) : telegramSent ? (
                       <><Sparkles className="w-3.5 h-3.5" /> Sent to Telegram</>
                     ) : (
-                      <><Send className="w-3.5 h-3.5" /> Send Complaint Summary</>
+                      <><Send className="w-3.5 h-3.5" /> Send Call Summary</>
                     )}
                   </button>
                 </div>
@@ -570,7 +570,7 @@ export default function Calls() {
   const stats = [
     { label: "Total Calls",  value: String(calls.length), color: "#0F3D3E", icon: PhoneCall },
     { label: "Connected",    value: String(completed),    color: "#1F8A70", icon: PhoneCall },
-    { label: "Live Now",     value: String(liveCalls.length || 0), color: "#D4AF37", icon: Mic },
+    { label: "Hot Leads",    value: String(hot),          color: "#D4AF37", icon: Sparkles  },
     { label: "Avg BANT",     value: avgScore,             color: "#0F3D3E", icon: PhoneOff  },
   ];
 

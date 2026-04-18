@@ -1416,3 +1416,14 @@ section {
   background: inherit;
   z-index: -1;
 }
+
+@media print {
+  aside { display: none !important; }
+  .flex-1 { margin-left: 0 !important; }
+  .print-hide { display: none !important; }
+  body, html { background: white !important; }
+  .premium-card, .machined-panel {
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+  }
+}
