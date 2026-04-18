@@ -536,6 +536,9 @@ export default function Calls() {
 
   // ── Live call polling — check every 8s for in_progress conversations ──────
   useEffect(() => {
+    // Track which call IDs were CALLING on the last poll so we can detect completions
+    const prevCallingIds = new Set<string>();
+
     const pollLive = async () => {
       try {
         const res = await fetch(
@@ -543,21 +546,85 @@ export default function Calls() {
           { headers: { "xi-api-key": ELEVENLABS_API_KEY } }
         );
         const data = await res.json();
-        if (data.conversations) {
-          const active = data.conversations
-            .filter((c: any) => c.status === "in_progress")
-            .map((c: any) => ({
+        if (!data.conversations) return;
+
+        const activeNow: any[] = data.conversations.filter((c: any) => c.status === "in_progress");
+        const activeIds = new Set(activeNow.map((c: any) => c.conversation_id));
+
+        // 1. Update banner
+        setLiveCalls(activeNow.map((c: any) => ({
+          id: c.conversation_id,
+          lead: c.call_summary_title || "Active Call",
+          startTime: formatTime(c.start_time_unix_secs),
+        })));
+
+        // 2. Sync in-progress status into the calls table
+        setCalls(prev => {
+          let updated = prev.map(call => {
+            if (activeIds.has(call.id) && call.status !== "CALLING") {
+              // Promote to CALLING
+              return { ...call, status: "CALLING", score: null, scoring: false, outcome: "WARM" };
+            }
+            return call;
+          });
+
+          // Add brand-new in-progress calls that aren't in the table yet
+          const existingIds = new Set(updated.map(c => c.id));
+          const newRows: CallRow[] = activeNow
+            .filter((c: any) => !existingIds.has(c.conversation_id))
+            .map((c: any): CallRow => ({
               id: c.conversation_id,
-              lead: c.call_summary_title || "Active Call",
-              startTime: formatTime(c.start_time_unix_secs),
+              lead: c.call_summary_title || "Unknown Call",
+              duration: "—",
+              time: formatTime(c.start_time_unix_secs),
+              status: "CALLING",
+              outcome: "WARM",
+              score: null,
+              scoring: false,
             }));
-          setLiveCalls(active);
+
+          return newRows.length ? [...newRows, ...updated] : updated;
+        });
+
+        // 3. Detect calls that JUST finished (were CALLING, no longer in active list)
+        const justFinished = [...prevCallingIds].filter(id => !activeIds.has(id));
+        if (justFinished.length > 0) {
+          // Re-fetch their final status + trigger scoring
+          await Promise.allSettled(justFinished.map(async id => {
+            try {
+              const r = await fetch(`https://api.elevenlabs.io/v1/convai/conversations/${id}`, {
+                headers: { "xi-api-key": ELEVENLABS_API_KEY },
+              });
+              const d = await r.json();
+              const finalStatus = mapStatus(d.status ?? "done");
+              const transcript: { role: string; message: string }[] = d.transcript ?? [];
+
+              setCalls(prev => prev.map(c =>
+                c.id === id ? { ...c, status: finalStatus, duration: formatDuration(d.call_duration_secs), scoring: true } : c
+              ));
+
+              const bant = await scoreWithGroq(transcript);
+              if (bant) {
+                scoreCache.current[id] = bant;
+                setCalls(prev => prev.map(c =>
+                  c.id === id ? { ...c, score: bant, scoring: false, outcome: bant.label } : c
+                ));
+              } else {
+                setCalls(prev => prev.map(c => c.id === id ? { ...c, scoring: false } : c));
+              }
+            } catch { /* silent */ }
+          }));
         }
+
+        // 4. Update tracker for next poll
+        prevCallingIds.clear();
+        activeIds.forEach(id => prevCallingIds.add(id));
+
       } catch { /* silent — don't interrupt UI */ }
     };
 
-    pollLive(); // immediate first check
-    liveTimerRef.current = setInterval(pollLive, 8000); // then every 8s
+    pollLive();
+    liveTimerRef.current = setInterval(pollLive, 8000);
     return () => { if (liveTimerRef.current) clearInterval(liveTimerRef.current); };
   }, []);
 
