@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion"; // AnimatePresence stil
 import {
   LayoutDashboard, UserCheck, PhoneCall, BarChart3,
   Activity, Settings, HelpCircle, LogOut, ChevronRight,
-  Gem, Zap,
+  Gem,
 } from "lucide-react";
 import { useEffect, useRef } from "react";
 
@@ -114,14 +114,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
         </motion.button>
-
-        {/* Live pulse banner */}
-        <div className="mx-3 mt-3 px-3 py-2 rounded-xl flex items-center gap-2.5 relative z-10"
-          style={{ background: "rgba(31,138,112,0.08)", border: "1px solid rgba(31,138,112,0.15)" }}>
-          <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: "#28B893" }} />
-          <span className="text-[9px] font-black uppercase tracking-widest" style={{ color: "#28B893" }}>AI Engine Live</span>
-          <Zap className="w-2.5 h-2.5 ml-auto" style={{ color: "#D4AF37" }} />
-        </div>
 
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 overflow-y-auto relative z-10">
