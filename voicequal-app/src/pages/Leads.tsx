@@ -1,6 +1,6 @@
-import { motion } from "framer-motion";
-import { Search, ArrowUpRight, Flame, Filter, RefreshCw } from "lucide-react";
-import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Search, ArrowUpRight, Flame, Filter, RefreshCw, Upload, X, CheckCircle2, AlertCircle, FileText } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import DashboardLayout from "../components/DashboardLayout";
 import { supabase } from "../lib/supabase";
@@ -63,6 +63,255 @@ const statusColors: Record<string, { bg: string; text: string }> = {
   PENDING:   { bg: "rgba(100,116,139,0.08)", text: "#64748B" },
 };
 
+// ─── CSV Import Modal ─────────────────────────────────────────────────────────
+type CsvRow = Record<string, string>;
+
+function parseCsv(text: string): CsvRow[] {
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(",").map(h => h.trim().toLowerCase().replace(/\s+/g, "_"));
+  return lines.slice(1).map(line => {
+    const vals = line.split(",");
+    return headers.reduce<CsvRow>((obj, h, i) => {
+      obj[h] = (vals[i] ?? "").trim();
+      return obj;
+    }, {});
+  });
+}
+
+function csvRowToLead(row: CsvRow, idx: number): Lead {
+  const name = row["name"] || row["lead_name"] || row["full_name"] || `Lead ${idx + 1}`;
+  const phone = row["phone"] || row["mobile"] || row["contact"] || "—";
+  const company = row["company"] || row["organisation"] || row["organization"] || "—";
+  const scoreRaw = parseFloat(row["score"] ?? row["bant_score"] ?? "");
+  const score = isNaN(scoreRaw) ? null : Math.min(10, Math.max(0, scoreRaw));
+  const bucket = row["bucket"] || row["outcome"] || (score !== null ? outcomeFromScore(score) : null);
+  return {
+    id: `csv-${Date.now()}-${idx}`,
+    name,
+    phone,
+    company,
+    score,
+    bucket: bucket?.toUpperCase() ?? null,
+    status: "PENDING",
+    date: new Date().toISOString().split("T")[0],
+  };
+}
+
+function ImportModal({ onClose, onImport }: { onClose: () => void; onImport: (leads: Lead[]) => void }) {
+  const [dragOver, setDragOver] = useState(false);
+  const [parsed, setParsed] = useState<Lead[] | null>(null);
+  const [fileName, setFileName] = useState("");
+  const [error, setError] = useState("");
+  const [step, setStep] = useState<"upload" | "preview" | "done">("upload");
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = useCallback((file: File) => {
+    setError("");
+    if (!file.name.endsWith(".csv")) { setError("Please upload a .csv file."); return; }
+    const reader = new FileReader();
+    reader.onload = e => {
+      const text = e.target?.result as string;
+      const rows = parseCsv(text);
+      if (rows.length === 0) { setError("No data rows found. Check your CSV format."); return; }
+      setParsed(rows.map((r, i) => csvRowToLead(r, i)));
+      setFileName(file.name);
+      setStep("preview");
+    };
+    reader.readAsText(file);
+  }, []);
+
+  const onDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleFile(file);
+  }, [handleFile]);
+
+  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleFile(file);
+  };
+
+  const confirmImport = () => {
+    if (!parsed) return;
+    onImport(parsed);
+    setStep("done");
+    setTimeout(onClose, 1400);
+  };
+
+  return (
+    <>
+      {/* Backdrop */}
+      <motion.div
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(6px)" }}
+        onClick={onClose}
+      />
+
+      {/* Panel */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.94, y: 24 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.94, y: 16 }}
+        transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
+      >
+        <div
+          className="w-full max-w-lg rounded-3xl overflow-hidden pointer-events-auto"
+          style={{ background: "#fff", boxShadow: "0 32px 80px rgba(0,0,0,0.18)", border: "1px solid rgba(0,0,0,0.06)" }}
+          onClick={e => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="px-6 pt-6 pb-4 flex items-center justify-between"
+            style={{ borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
+            <div>
+              <div className="crown-badge mb-1">Step 1 of 5</div>
+              <h2 className="text-lg font-black text-zinc-950 uppercase tracking-tight" style={{ fontFamily: "'Outfit',sans-serif" }}>
+                Import Leads
+              </h2>
+              <p className="text-[11px] font-medium mt-0.5" style={{ color: "#94a3b8" }}>
+                Upload a CSV — we'll map name, phone, company &amp; score automatically.
+              </p>
+            </div>
+            <button onClick={onClose}
+              className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-zinc-100 transition-colors">
+              <X className="w-4 h-4 text-zinc-400" />
+            </button>
+          </div>
+
+          <div className="px-6 py-5">
+            {step === "upload" && (
+              <>
+                {/* Drop zone */}
+                <motion.div
+                  onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+                  onDragLeave={() => setDragOver(false)}
+                  onDrop={onDrop}
+                  animate={{ borderColor: dragOver ? "#1F8A70" : "rgba(31,138,112,0.25)", background: dragOver ? "rgba(31,138,112,0.05)" : "rgba(31,138,112,0.02)" }}
+                  transition={{ duration: 0.18 }}
+                  onClick={() => fileRef.current?.click()}
+                  className="rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-3 cursor-pointer py-10 transition-all"
+                >
+                  <motion.div
+                    animate={{ y: dragOver ? -4 : 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="w-12 h-12 rounded-2xl flex items-center justify-center"
+                    style={{ background: "linear-gradient(135deg,#1F8A70,#0F3D3E)" }}
+                  >
+                    <Upload className="w-5 h-5 text-white" />
+                  </motion.div>
+                  <div className="text-center">
+                    <div className="text-sm font-black text-zinc-800">Drop your CSV here</div>
+                    <div className="text-[11px] font-medium mt-0.5" style={{ color: "#94a3b8" }}>or click to browse files</div>
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full"
+                    style={{ background: "rgba(31,138,112,0.1)", color: "#1F8A70" }}>
+                    .CSV files only
+                  </span>
+                </motion.div>
+                <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={onFileChange} />
+
+                {/* Expected columns */}
+                <div className="mt-4 rounded-xl p-3" style={{ background: "rgba(212,175,55,0.06)", border: "1px solid rgba(212,175,55,0.15)" }}>
+                  <div className="text-[9px] font-black uppercase tracking-widest mb-2" style={{ color: "#A67C2E" }}>Expected columns (any order)</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {["name", "phone", "company", "score", "bucket"].map(col => (
+                      <span key={col} className="text-[9px] font-black px-2 py-0.5 rounded-md font-mono"
+                        style={{ background: "rgba(212,175,55,0.12)", color: "#A67C2E" }}>{col}</span>
+                    ))}
+                  </div>
+                </div>
+
+                {error && (
+                  <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                    className="mt-3 flex items-center gap-2 px-3 py-2 rounded-xl"
+                    style={{ background: "rgba(239,68,68,0.07)", border: "1px solid rgba(239,68,68,0.15)" }}>
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" style={{ color: "#DC2626" }} />
+                    <span className="text-[11px] font-bold" style={{ color: "#DC2626" }}>{error}</span>
+                  </motion.div>
+                )}
+              </>
+            )}
+
+            {step === "preview" && parsed && (
+              <>
+                {/* File info */}
+                <div className="flex items-center gap-2.5 mb-4 px-3 py-2.5 rounded-xl"
+                  style={{ background: "rgba(31,138,112,0.06)", border: "1px solid rgba(31,138,112,0.15)" }}>
+                  <FileText className="w-4 h-4 shrink-0" style={{ color: "#1F8A70" }} />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[11px] font-black truncate" style={{ color: "#1F8A70" }}>{fileName}</div>
+                    <div className="text-[10px] font-medium" style={{ color: "#94a3b8" }}>{parsed.length} leads detected</div>
+                  </div>
+                  <CheckCircle2 className="w-4 h-4 shrink-0" style={{ color: "#1F8A70" }} />
+                </div>
+
+                {/* Preview table */}
+                <div className="rounded-xl overflow-hidden border" style={{ borderColor: "rgba(0,0,0,0.07)" }}>
+                  <div className="grid grid-cols-3 px-3 py-2 text-[9px] font-black uppercase tracking-widest"
+                    style={{ background: "rgba(0,0,0,0.03)", color: "#94a3b8", borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
+                    <div>Name</div><div>Phone</div><div>Company</div>
+                  </div>
+                  <div className="max-h-44 overflow-y-auto">
+                    {parsed.slice(0, 8).map((lead, i) => (
+                      <motion.div key={lead.id}
+                        initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.04 }}
+                        className="grid grid-cols-3 px-3 py-2.5 text-[11px] font-medium"
+                        style={{ borderBottom: i < Math.min(parsed.length, 8) - 1 ? "1px solid rgba(0,0,0,0.04)" : "none", color: "#09090b" }}>
+                        <div className="truncate font-bold">{lead.name}</div>
+                        <div className="truncate font-mono text-[10px]" style={{ color: "#71717a" }}>{lead.phone}</div>
+                        <div className="truncate" style={{ color: "#71717a" }}>{lead.company}</div>
+                      </motion.div>
+                    ))}
+                  </div>
+                  {parsed.length > 8 && (
+                    <div className="px-3 py-2 text-center text-[10px] font-bold" style={{ color: "#94a3b8", borderTop: "1px solid rgba(0,0,0,0.05)" }}>
+                      +{parsed.length - 8} more leads
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-2 mt-4">
+                  <button onClick={() => { setParsed(null); setStep("upload"); }}
+                    className="flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-wide border transition-all hover:bg-zinc-50"
+                    style={{ borderColor: "rgba(0,0,0,0.1)", color: "#71717a" }}>
+                    Change File
+                  </button>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                    onClick={confirmImport}
+                    className="flex-[2] py-2.5 rounded-xl text-xs font-black uppercase tracking-wide text-white"
+                    style={{ background: "linear-gradient(135deg,#1F8A70,#0F3D3E)" }}>
+                    Import {parsed.length} Leads →
+                  </motion.button>
+                </div>
+              </>
+            )}
+
+            {step === "done" && (
+              <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+                className="flex flex-col items-center justify-center py-10 gap-3">
+                <motion.div
+                  initial={{ scale: 0 }} animate={{ scale: 1 }}
+                  transition={{ type: "spring", stiffness: 260, damping: 18 }}
+                  className="w-14 h-14 rounded-full flex items-center justify-center"
+                  style={{ background: "linear-gradient(135deg,#1F8A70,#0F3D3E)" }}>
+                  <CheckCircle2 className="w-7 h-7 text-white" />
+                </motion.div>
+                <div className="text-base font-black text-zinc-900" style={{ fontFamily: "'Outfit',sans-serif" }}>Leads Imported!</div>
+                <div className="text-[11px] font-medium" style={{ color: "#94a3b8" }}>All leads are now in your pipeline.</div>
+              </motion.div>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    </>
+  );
+}
+
 function ScoreBar({ score }: { score: number }) {
   const color = score >= 7 ? "#1F8A70" : score >= 4 ? "#D4AF37" : "#94A3B8";
   return (
@@ -88,6 +337,7 @@ export default function Leads() {
   const [hasLive, setHasLive] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [showImport, setShowImport] = useState(false);
 
   const fetchLeads = async () => {
     setLoading(true);
@@ -138,6 +388,17 @@ export default function Leads() {
 
   return (
     <DashboardLayout>
+      <AnimatePresence>
+        {showImport && (
+          <ImportModal
+            onClose={() => setShowImport(false)}
+            onImport={(imported) => {
+              setAllLeads(prev => [...imported, ...prev]);
+              setShowImport(false);
+            }}
+          />
+        )}
+      </AnimatePresence>
       <div className="space-y-6">
 
         {/* Header */}
@@ -160,15 +421,24 @@ export default function Leads() {
               </span>{" "}ready for your team.
             </p>
           </div>
-          <motion.button onClick={fetchLeads} disabled={loading}
-            whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-wider border"
-            style={{ borderColor: "rgba(212,175,55,0.2)", color: "#94a3b8", backgroundColor: "rgba(212,175,55,0.04)" }}>
-            <motion.div animate={loading ? { rotate: 360 } : { rotate: 0 }} transition={{ duration: 0.7, repeat: loading ? Infinity : 0, ease: 'linear' }}>
-              <RefreshCw className="w-3 h-3" />
-            </motion.div>
-            Refresh
-          </motion.button>
+          <div className="flex items-center gap-2">
+            <motion.button
+              whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+              onClick={() => setShowImport(true)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[11px] font-black uppercase tracking-wider text-white"
+              style={{ background: "linear-gradient(135deg,#1F8A70,#0F3D3E)" }}>
+              <Upload className="w-3.5 h-3.5" /> Import CSV
+            </motion.button>
+            <motion.button onClick={fetchLeads} disabled={loading}
+              whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-wider border"
+              style={{ borderColor: "rgba(212,175,55,0.2)", color: "#94a3b8", backgroundColor: "rgba(212,175,55,0.04)" }}>
+              <motion.div animate={loading ? { rotate: 360 } : { rotate: 0 }} transition={{ duration: 0.7, repeat: loading ? Infinity : 0, ease: 'linear' }}>
+                <RefreshCw className="w-3 h-3" />
+              </motion.div>
+              Refresh
+            </motion.button>
+          </div>
         </motion.div>
 
         {/* Summary chips */}

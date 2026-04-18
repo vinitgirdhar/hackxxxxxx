@@ -105,13 +105,17 @@ const PRIORITY: Record<string, { label: string; color: string; bg: string }> = {
 
 // ─── Lead Card ────────────────────────────────────────────────────────────────
 function LeadCard({
-  lead, stageColor, stageGradient, si, i,
+  lead, si, i,
   onPromote, onDemote,
 }: {
-  lead: PipelineLead; stageColor: string; stageGradient: string;
+  lead: PipelineLead;
   si: number; i: number;
   onPromote: () => void; onDemote: () => void;
 }) {
+  const stageConfig = stages.find(s => s.key === lead.stage) ?? stages[0];
+  const stageColor = stageConfig.color;
+  const stageGradient = stageConfig.gradient;
+
   const p = PRIORITY[lead.priority];
   const scoreColor = lead.score == null ? "#94a3b8"
     : lead.score >= 8 ? "#E05A1F"
@@ -119,30 +123,56 @@ function LeadCard({
     : lead.score >= 4 ? "#D4AF37"
     : "#94a3b8";
 
+  const stageKeys = stages.map(s => s.key);
+  const stageIdx = stageKeys.indexOf(lead.stage);
+  const canPromote = stageIdx < stageKeys.length - 1;
+  const canDemote = stageIdx > 0;
+
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.15 } }}
-      transition={{ delay: si * 0.03 + i * 0.03, duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-      whileHover={{ y: -2 }}
-      className="relative rounded-2xl p-3.5 cursor-default group transition-shadow"
+      layoutId={lead.id}
+      initial={{ opacity: 0, y: 12, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.93, y: -8, transition: { duration: 0.2 } }}
+      transition={{ delay: si * 0.03 + i * 0.03, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      whileHover={{ y: -3, boxShadow: `0 8px 24px ${stageColor}22` }}
+      className="relative rounded-2xl p-3.5 cursor-default group"
       style={{
-        background: "rgba(255,255,255,0.92)",
-        border: "1px solid rgba(0,0,0,0.07)",
-        boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
+        background: "rgba(255,255,255,0.95)",
+        border: `1px solid ${stageColor}28`,
+        boxShadow: `0 1px 4px rgba(0,0,0,0.04), 0 0 0 0px ${stageColor}00`,
+        transition: "border-color 0.35s ease, box-shadow 0.35s ease",
       }}
     >
-      {/* Top colour accent bar */}
-      <div className="absolute top-0 left-3 right-3 h-[2px] rounded-b-full"
-        style={{ background: stageGradient }} />
+      {/* Top colour accent bar — reflects current stage */}
+      <motion.div
+        className="absolute top-0 left-3 right-3 h-[2.5px] rounded-b-full"
+        style={{ background: stageGradient }}
+        layoutId={`bar-${lead.id}`}
+        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      />
+
+      {/* Stage badge pill */}
+      <motion.div
+        className="absolute top-2.5 right-3 text-[7px] font-black uppercase tracking-widest px-1.5 py-[2px] rounded-full"
+        style={{ background: `${stageColor}15`, color: stageColor }}
+        layoutId={`stage-badge-${lead.id}`}
+        transition={{ duration: 0.4 }}
+      >
+        {stageConfig.label.replace(" 🔥", "")}
+      </motion.div>
 
       {/* Name + Priority */}
-      <div className="flex items-center gap-2.5 mb-2.5">
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black text-white shrink-0"
-          style={{ background: stageGradient }}>
+      <div className="flex items-center gap-2.5 mb-2.5 pr-12">
+        <motion.div
+          className="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black text-white shrink-0"
+          style={{ background: stageGradient }}
+          layoutId={`avatar-${lead.id}`}
+          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+        >
           {lead.name.slice(0, 2).toUpperCase()}
-        </div>
+        </motion.div>
         <div className="flex-1 min-w-0">
           <div className="font-bold text-[12px] leading-tight truncate" style={{ color: "#09090b", fontFamily: "'Outfit',sans-serif" }}>
             {lead.name}
@@ -155,7 +185,7 @@ function LeadCard({
 
       {/* Score + Value row */}
       <div className="flex items-center justify-between px-1 py-1.5 rounded-lg mb-2"
-        style={{ background: "rgba(0,0,0,0.025)" }}>
+        style={{ background: `${stageColor}08` }}>
         <div className="flex items-center gap-1">
           <Brain className="w-3 h-3" style={{ color: scoreColor }} />
           {lead.score != null ? (
@@ -175,16 +205,28 @@ function LeadCard({
       <div className="flex items-center justify-between">
         <span className="text-[9px] font-medium" style={{ color: "#b0b7c3" }}>{lead.lastActivity}</span>
         <div className="flex gap-1">
-          <button onClick={onDemote}
+          <motion.button
+            whileTap={{ scale: 0.88 }}
+            onClick={onDemote}
+            disabled={!canDemote}
             className="px-2 py-1 rounded-md text-[8px] font-bold uppercase tracking-wide transition-all hover:bg-zinc-100"
-            style={{ color: "#94a3b8" }}>
+            style={{ color: canDemote ? "#94a3b8" : "#d4d4d8", cursor: canDemote ? "pointer" : "not-allowed" }}
+          >
             ←
-          </button>
-          <button onClick={onPromote}
+          </motion.button>
+          <motion.button
+            whileTap={{ scale: 0.88 }}
+            whileHover={{ scale: 1.08 }}
+            onClick={onPromote}
+            disabled={!canPromote}
             className="px-2 py-1 rounded-md text-[8px] font-bold uppercase tracking-wide text-white transition-all"
-            style={{ background: stageGradient }}>
+            style={{
+              background: canPromote ? stageGradient : "#e4e4e7",
+              cursor: canPromote ? "pointer" : "not-allowed",
+            }}
+          >
             →
-          </button>
+          </motion.button>
         </div>
       </div>
     </motion.div>
@@ -428,7 +470,6 @@ export default function Pipeline() {
                 .filter(l => l.stage === stage.key)
                 .sort((a, b) => (b.score ?? 0) - (a.score ?? 0)); // AI priority order
               const stageValue = stageLeads.reduce((s, l) => s + l.premiumValue, 0);
-              const stageIdx = stageKeys.indexOf(stage.key);
 
               return (
                 <div key={stage.key}
@@ -480,10 +521,9 @@ export default function Pipeline() {
                     {stageLeads.map((lead, i) => (
                       <LeadCard
                         key={lead.id} lead={lead}
-                        stageColor={stage.color} stageGradient={stage.gradient}
                         si={si} i={i}
-                        onPromote={() => stageIdx < stageKeys.length - 1 && promote(lead.id)}
-                        onDemote={() => stageIdx > 0 && demote(lead.id)}
+                        onPromote={() => promote(lead.id)}
+                        onDemote={() => demote(lead.id)}
                       />
                     ))}
                   </AnimatePresence>
