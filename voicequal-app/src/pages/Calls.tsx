@@ -9,7 +9,7 @@ import DashboardLayout from "../components/DashboardLayout";
 import { MOCK_CALLS } from "../lib/mockCalls";
 
 // ── API Keys ──────────────────────────────────────────────────────────────────
-const ELEVENLABS_API_KEY = "f86cd3c5c5c32a9b951409b35041b6bb83e73a5b7e711db8f783babbeb94f103";
+const ELEVENLABS_API_KEY = "sk_865181f73d2db5ebfebdf24343837a6194959b066258b977";
 const GROQ_API_KEY = "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";
 const GROQ_MODEL   = "llama-3.1-8b-instant"; // fastest Groq model
 
@@ -72,13 +72,29 @@ const SCORE_COLOR = (n: number) =>
 async function scoreWithGroq(transcript: { role: string; message: string }[]): Promise<BANTScore | null> {
   if (!transcript.length) return null;
 
-  // Trim transcript to last 30 turns to keep tokens low
-  const turns = transcript.slice(-30);
-  const convo = turns.map(t => `${t.role === "agent" ? "A" : "L"}: ${t.message}`).join("\n");
+  // Trim transcript to last 40 turns to keep tokens manageable while capturing full context
+  const turns = transcript.slice(-40);
+  const convo = turns.map(t => `${t.role === "agent" ? "Agent" : "Lead"}: ${t.message}`).join("\n");
 
-  const prompt = `Rate this sales call transcript on BANT (0-10 each). Reply ONLY with JSON, no markdown.
-{"budget":N,"authority":N,"need":N,"timeline":N,"summary":"<10 words>"}
-Transcript:
+  const systemPrompt = `You are an expert sales intelligence analyst specializing in BANT lead qualification. Your job is to analyze any conversation transcript — whether it's a sales call, insurance claim, service inquiry, or support call — and score the LEAD (customer/caller) across four BANT dimensions.
+
+BANT scoring is always relative to whether this lead has potential value. Interpret dimensions broadly:
+- BUDGET (1-10): Does the lead have financial capacity or involvement? Evidence of spending, payments, accounts, or existing financial commitment = higher score. Brand new, uncommitted, or free inquiries = lower score.
+- AUTHORITY (1-10): Is this person empowered to make decisions or take action? They speak confidently, are the account holder, make choices without needing approval = higher score. They need to "ask someone else" or are just gathering info = lower score.
+- NEED (1-10): How urgent and real is their need? They have a clear, immediate problem or requirement = higher score. Vague curiosity with no real pain point = lower score.
+- TIMELINE (1-10): How time-sensitive is this? They need action NOW, mention deadlines, or are in an active situation = higher score. No urgency, open-ended, or hypothetical = lower score.
+
+IMPORTANT RULES:
+- Scores MUST be between 3 and 10. Never give a 1 or 2 unless the transcript has literally zero relevant information.
+- If the call is incomplete or short, give moderate scores (4-6) based on partial evidence — do NOT default to minimums.
+- A customer filing an insurance claim after an accident is a STRONG lead: high NEED (they need help NOW), high AUTHORITY (it's their accident/claim), moderate-high TIMELINE (accident just happened), moderate BUDGET (they're an existing paying customer).
+- Base your scores on actual evidence in the transcript, not assumptions.
+- Reply ONLY with raw JSON — no markdown, no explanation, no code fences.`;
+
+  const userPrompt = `Analyze this conversation and return a BANT score JSON object:
+{"budget":N,"authority":N,"need":N,"timeline":N,"summary":"<12 words max describing the lead>"}
+
+CONVERSATION:
 ${convo}`;
 
   try {
@@ -87,20 +103,34 @@ ${convo}`;
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${GROQ_API_KEY}` },
       body: JSON.stringify({
         model: GROQ_MODEL,
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.1,
-        max_tokens: 80,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        temperature: 0.15,
+        max_tokens: 120,
       }),
     });
     const data = await res.json();
     const raw = (data.choices?.[0]?.message?.content ?? "").trim();
-    // Extract JSON even if model wraps it
-    const jsonStr = raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1);
+    // Extract JSON robustly even if model wraps it in backticks or extra text
+    const start = raw.indexOf("{");
+    const end = raw.lastIndexOf("}");
+    if (start === -1 || end === -1) throw new Error("No JSON in response");
+    const jsonStr = raw.slice(start, end + 1);
     const { budget, authority, need, timeline, summary } = JSON.parse(jsonStr);
-    const total = parseFloat(((budget + authority + need + timeline) / 4).toFixed(1));
-    const label: BANTScore["label"] = total >= 7 ? "HOT" : total >= 4 ? "WARM" : "COLD";
-    return { total, budget, authority, need, timeline, label, summary };
-  } catch {
+
+    // Clamp scores between 3 and 10 — minimum of 3 for any completed conversation
+    const b = Math.max(3, Math.min(10, Math.round(Number(budget)) || 3));
+    const a = Math.max(3, Math.min(10, Math.round(Number(authority)) || 3));
+    const n = Math.max(3, Math.min(10, Math.round(Number(need)) || 3));
+    const t = Math.max(3, Math.min(10, Math.round(Number(timeline)) || 3));
+
+    const total = parseFloat(((b + a + n + t) / 4).toFixed(1));
+    const label: BANTScore["label"] = total >= 7 ? "HOT" : total >= 4.5 ? "WARM" : "COLD";
+    return { total, budget: b, authority: a, need: n, timeline: t, label, summary: summary ?? "" };
+  } catch (err) {
+    console.error("[BANT Scoring Error]", err);
     return null;
   }
 }

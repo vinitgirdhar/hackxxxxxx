@@ -14,7 +14,7 @@ import { triggerCall } from "../api/triggerCall";
 import { MOCK_CALLS } from "../lib/mockCalls";
 
 // ElevenLabs API key
-const ELEVENLABS_API_KEY = "f86cd3c5c5c32a9b951409b35041b6bb83e73a5b7e711db8f783babbeb94f103";
+const ELEVENLABS_API_KEY = "sk_865181f73d2db5ebfebdf24343837a6194959b066258b977";
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 28 },
